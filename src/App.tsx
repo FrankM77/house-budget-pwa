@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { EnvelopeListView } from './views/EnvelopeListView';
 // 1. ADD THIS IMPORT
 import EnvelopeDetail from './views/EnvelopeDetail'; 
+import { SettingsView } from './components/SettingsView';
+import { AddEnvelopeView } from './components/AddEnvelopeView';
+import { AddTransactionView } from './components/AddTransactionView';
 
 function App() {
   // State: Mimicking @State private var showingLaunchScreen
@@ -35,8 +38,10 @@ function App() {
         
         {/* 2. ADD THIS ROUTE */}
         <Route path="/envelope/:id" element={<EnvelopeDetail />} />
+        <Route path="/add-envelope" element={<AddEnvelopeView />} />
+        <Route path="/add-transaction" element={<AddTransactionView />} />
         
-        <Route path="/settings" element={<div className="p-4">Settings Page Coming Soon</div>} />
+        <Route path="/settings" element={<SettingsView />} />
       </Routes>
     </BrowserRouter>
   );
