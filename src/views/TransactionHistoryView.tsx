@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Filter, Search, X, Calendar } from 'lucide-react';
+import { ArrowLeft, Filter, Search, X } from 'lucide-react';
 import { useEnvelopeStore } from '../store/envelopeStore';
 import EnvelopeTransactionRow from '../components/EnvelopeTransactionRow';
 import TransactionModal from '../components/modals/TransactionModal';

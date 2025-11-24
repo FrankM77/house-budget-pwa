@@ -83,14 +83,14 @@ const EnvelopeDetail: React.FC = () => {
                             renameEnvelope(id, newName);
                         }
                     }} 
-                    className="text-blue-600 dark:text-green-400 font-medium"
+                    className="text-blue-600 dark:text-blue-400 font-medium"
                 >
                     Rename
                 </button>
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{currentEnvelope.name}</h1>
                 <button 
                     onClick={handleDone} 
-                    className="text-blue-600 dark:text-green-400 font-bold"
+                    className="text-blue-600 dark:text-blue-400 font-bold"
                 >
                     Done
                 </button>

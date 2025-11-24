@@ -39,6 +39,51 @@ export const SettingsView: React.FC = () => {
     }
   };
 
+
+  // NEW: CSV EXPORT LOGIC
+  const handleExportCSV = () => {
+    try {
+      // 1. Define Headers
+      const headers = ['Date', 'Description', 'Amount', 'Type', 'Envelope', 'Reconciled'];
+      
+      // 2. Map Data
+      const rows = transactions.map(t => {
+        const envName = envelopes.find(e => e.id === t.envelopeId)?.name || 'Unknown';
+        // Escape quotes in description just in case
+        const safeDesc = t.description.replace(/"/g, '""'); 
+        
+        return [
+          t.date.split('T')[0], // YYYY-MM-DD
+          `"${safeDesc}"`,      // Wrapped in quotes for safety
+          t.amount.toFixed(2),
+          t.type,
+          `"${envName}"`,
+          t.reconciled ? 'Yes' : 'No'
+        ].join(',');
+      });
+
+      // 3. Combine
+      const csvContent = [headers.join(','), ...rows].join('\n');
+
+      // 4. Download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `budget-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setMessage({ type: 'success', text: 'CSV exported successfully!' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error(error);
+      setMessage({ type: 'error', text: 'Failed to export CSV.' });
+    }
+  };
+
   // 2. IMPORT LOGIC
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -151,6 +196,21 @@ export const SettingsView: React.FC = () => {
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900 dark:text-white">Export Backup</h3>
               <p className="text-sm text-gray-500 dark:text-zinc-400">Save your data to a JSON file</p>
+            </div>
+          </div>
+
+          {/* CSV Export Card */}
+          <div 
+            onClick={handleExportCSV}
+            className="bg-white dark:bg-zinc-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800 flex items-center gap-4 active:scale-[0.99] transition-transform cursor-pointer"
+          >
+            <div className="p-3 bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300 rounded-full">
+              {/* Reuse Download icon or import FileText from lucide-react */}
+              <Download size={24} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Export to Excel (CSV)</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">Save readable spreadsheet</p>
             </div>
           </div>
 
