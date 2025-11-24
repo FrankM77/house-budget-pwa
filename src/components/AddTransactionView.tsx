@@ -1,147 +1,74 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useEnvelopeStore } from '../store/envelopeStore';
 
 export const AddTransactionView: React.FC = () => {
   const navigate = useNavigate();
-  const { envelopes, spendFromEnvelope, addToEnvelope } = useEnvelopeStore();
-  
-  // Sort envelopes alphabetically for the dropdown
+  const { envelopes } = useEnvelopeStore();
+
+  // Sort envelopes by orderIndex (same as main screen)
   const sortedEnvelopes = [...envelopes]
     .filter(e => e.isActive)
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  const [type, setType] = useState<'expense' | 'income'>('expense');
-  const [envelopeId, setEnvelopeId] = useState('');
-  const [amount, setAmount] = useState('');
-  const [note, setNote] = useState('');
-
-  const isExpense = type === 'expense';
-  const themeColor = isExpense ? 'text-red-600' : 'text-green-600';
-  const bgColor = isExpense ? 'bg-red-50' : 'bg-green-50';
-  const buttonColor = isExpense ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700';
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseFloat(amount);
-    if (!envelopeId || isNaN(val) || val <= 0) return;
-
-    if (isExpense) {
-      spendFromEnvelope(envelopeId, val, note || 'Expense', new Date());
-    } else {
-      addToEnvelope(envelopeId, val, note || 'Deposit', new Date());
-    }
-    navigate('/');
-  };
+    .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header */}
-      <header className="bg-white border-b px-4 py-3 sticky top-0 z-10 flex items-center shadow-sm">
-        <button onClick={() => navigate('/')} className="mr-3 text-gray-600">
-          <ArrowLeft size={24} />
+      <header className="bg-white dark:bg-black border-b border-gray-200 dark:border-zinc-800 px-4 py-3 sticky top-0 z-10 flex items-center justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-blue-600 dark:text-blue-400 font-medium"
+        >
+          Cancel
         </button>
-        <h1 className="text-xl font-bold text-gray-900">New Transaction</h1>
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">New Transaction</h1>
+        <div className="w-12" /> {/* Spacer for centering */}
       </header>
 
-      <div className="p-4 max-w-md mx-auto space-y-6">
-        
-        {/* Type Toggle */}
-        <div className="flex bg-gray-200 p-1 rounded-xl">
-          <button
-            onClick={() => setType('expense')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
-              isExpense ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            <TrendingDown size={18} /> Expense
-          </button>
-          <button
-            onClick={() => setType('income')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
-              !isExpense ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            <TrendingUp size={18} /> Income
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* CSS to hide default browser spinners on number inputs */}
-          <style>{`
-            input[type=number]::-webkit-inner-spin-button, 
-            input[type=number]::-webkit-outer-spin-button { 
-              -webkit-appearance: none; 
-              margin: 0; 
-            }
-            input[type=number] {
-              -moz-appearance: textfield;
-            }
-          `}</style>
-
-          {/* Amount Input - Flexbox Layout */}
-          <div className={`py-8 px-4 rounded-2xl ${bgColor} border border-gray-100 flex flex-col items-center justify-center`}>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Amount</label>
-            
-            <div className="flex items-center justify-center">
-              <span className={`text-4xl font-bold mr-1 ${themeColor}`}>$</span>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
-                    e.preventDefault();
-                  }
-                }}
-                placeholder="0.00"
-                step="0.01"
-                className={`w-48 bg-transparent text-5xl font-bold text-left focus:outline-none placeholder-gray-300 ${themeColor}`}
-                autoFocus
-              />
+      <div className="p-4 max-w-md mx-auto">
+        {/* SELECT ENVELOPE Section */}
+        <section className="mb-6">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
+            {/* Section Header */}
+            <div className="px-4 py-2 bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700">
+              <h2 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                SELECT ENVELOPE
+              </h2>
             </div>
-          </div>
 
-          {/* Envelope Select */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Select Envelope</label>
-            <select
-              value={envelopeId}
-              onChange={(e) => setEnvelopeId(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
-              required
-            >
-              <option value="" disabled>Choose an envelope...</option>
-              {sortedEnvelopes.map(env => (
-                <option key={env.id} value={env.id}>
-                  {env.name} (${env.currentBalance.toFixed(2)})
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Envelope List */}
+            {sortedEnvelopes.length === 0 ? (
+              <div className="px-4 py-8 text-center text-gray-500 dark:text-zinc-400">
+                <p>No envelopes available</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 dark:divide-zinc-700">
+                {sortedEnvelopes.map((env) => (
+                  <button
+                    key={env.id}
+                    onClick={() => navigate(`/envelope/${env.id}`)}
+                    className="w-full px-4 py-4 text-left flex items-center justify-between hover:bg-gray-50 dark:hover:bg-zinc-800 active:bg-gray-100 dark:active:bg-zinc-700 transition-colors"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {env.name}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-zinc-400">
+                        ${env.currentBalance.toFixed(2)}
+                      </span>
+                    </div>
 
-          {/* Note Input */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Note (Optional)</label>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="What was this for?"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+                    <ChevronRight
+                      size={20}
+                      className="text-gray-400 dark:text-zinc-500"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={!envelopeId || !amount}
-            className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-md transition-transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${buttonColor}`}
-          >
-            {isExpense ? 'Spend Money' : 'Add Money'}
-          </button>
-        </form>
+        </section>
       </div>
     </div>
   );

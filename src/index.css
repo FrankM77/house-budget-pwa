@@ -1,4 +1,4 @@
-  @tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -14,10 +14,6 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /* Add this layer to override browser defaults */
 @layer base {

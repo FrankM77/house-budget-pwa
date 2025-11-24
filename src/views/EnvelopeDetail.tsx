@@ -118,14 +118,14 @@ const EnvelopeDetail: React.FC = () => {
 
             {/* --- List Section 2: Action Buttons (Rule #1: Section -> Grouped Div) --- */}
             <section className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg mb-4 divide-y divide-gray-100 dark:divide-zinc-800 border border-gray-100 dark:border-zinc-800">
-                <button 
+                <button
                     className="flex items-center w-full p-4 text-left text-green-600 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition duration-150"
                     onClick={() => setShowingAddMoney(true)}
                 >
                     <ArrowUpCircle className="w-5 h-5 mr-3" />
                     Add Money
                 </button>
-                <button 
+                <button
                     className="flex items-center w-full p-4 text-left text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition duration-150"
                     onClick={() => setShowingSpendMoney(true)}
                 >
@@ -176,7 +176,7 @@ const EnvelopeDetail: React.FC = () => {
                     Delete Envelope
                 </button>
             </div>
-            
+
             {/* Transaction Modal (for Add, Spend, and Edit) */}
             {(showingAddMoney || showingSpendMoney || editingTransaction) && (
                 <TransactionModal
