@@ -6,6 +6,8 @@ import { Trash, ArrowUpCircle, ArrowDownCircle, ArrowRightLeft } from 'lucide-re
 import TransactionModal from '../components/modals/TransactionModal';
 import TransferModal from '../components/modals/TransferModal';
 import EnvelopeTransactionRow from '../components/EnvelopeTransactionRow';
+import { SwipeableRow } from '../components/ui/SwipeableRow';
+import { AnimatePresence, motion } from 'framer-motion';
 
 // Helper to format currency
 const formatCurrency = (amount: number): string => {
@@ -150,14 +152,26 @@ const EnvelopeDetail: React.FC = () => {
                             No transactions yet for this envelope.
                         </p>
                     ) : (
-                        envelopeTransactions.map(transaction => (
-                            <EnvelopeTransactionRow
-                                key={transaction.id}
-                                transaction={transaction}
-                                onReconcile={() => handleReconcile(transaction)}
-                                onEdit={() => setEditingTransaction(transaction)}
-                            />
-                        ))
+                        <AnimatePresence initial={false} mode="popLayout">
+                            {envelopeTransactions.map(transaction => (
+                                <motion.div
+                                    key={transaction.id}
+                                    layout
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <SwipeableRow onDelete={() => useEnvelopeStore.getState().deleteTransaction(transaction.id)}>
+                                        <EnvelopeTransactionRow
+                                            transaction={transaction}
+                                            onReconcile={() => handleReconcile(transaction)}
+                                            onEdit={() => setEditingTransaction(transaction)}
+                                        />
+                                    </SwipeableRow>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
                     )}
                 </div>
             </section>
