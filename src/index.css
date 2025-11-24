@@ -14,3 +14,25 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add this layer to override browser defaults */
+@layer base {
+  body {
+    /* 1. Stop users from selecting text like a document */
+    -webkit-user-select: none;
+    user-select: none;
+
+    /* 2. Remove the grey flash when tapping buttons */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* CRITICAL: Re-enable selection for inputs so users can actually type! */
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
