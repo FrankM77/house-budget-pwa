@@ -3,7 +3,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import { EnvelopeListView } from './views/EnvelopeListView';
 // 1. ADD THIS IMPORT
 import EnvelopeDetail from './views/EnvelopeDetail';
-import { SettingsView } from './components/SettingsView';
+import { SettingsView } from './views/SettingsView';
 import { AddEnvelopeView } from './components/AddEnvelopeView';
 import { AddTransactionView } from './components/AddTransactionView';
 import { TransactionHistoryView } from './views/TransactionHistoryView';
