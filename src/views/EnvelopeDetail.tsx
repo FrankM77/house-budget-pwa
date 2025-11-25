@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEnvelopeStore } from '../store/envelopeStore';
-import { useToastStore } from '../stores/useToastStore';
+import { useEnvelopeStore } from '../stores/envelopeStore';
+import { useToastStore } from '../stores/toastStore';
 import type { Transaction } from '../models/types';
 import { Trash, ArrowUpCircle, ArrowDownCircle, ArrowRightLeft } from 'lucide-react';
 import TransactionModal from '../components/modals/TransactionModal';

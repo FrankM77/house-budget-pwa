@@ -4,11 +4,11 @@ import { EnvelopeListView } from './views/EnvelopeListView';
 // 1. ADD THIS IMPORT
 import EnvelopeDetail from './views/EnvelopeDetail';
 import { SettingsView } from './views/SettingsView';
-import { AddEnvelopeView } from './components/AddEnvelopeView';
-import { AddTransactionView } from './components/AddTransactionView';
+import { AddEnvelopeView } from './views/AddEnvelopeView';
+import { AddTransactionView } from './views/AddTransactionView';
 import { TransactionHistoryView } from './views/TransactionHistoryView';
 import { Toast } from './components/ui/Toast';
-import { useThemeStore } from './store/themeStore';
+import { useThemeStore } from './stores/themeStore';
 
 function App() {
   // State: Mimicking @State private var showingLaunchScreen

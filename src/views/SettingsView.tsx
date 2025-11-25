@@ -1,8 +1,8 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Moon, Sun, Download, Upload, Trash2, CheckCircle, ChevronRight, FileText } from 'lucide-react';
-import { useEnvelopeStore } from '../store/envelopeStore';
-import { useThemeStore } from '../store/themeStore';
+import { useEnvelopeStore } from '../stores/envelopeStore';
+import { useThemeStore } from '../stores/themeStore';
 
 export const SettingsView: React.FC = () => {
   const navigate = useNavigate();

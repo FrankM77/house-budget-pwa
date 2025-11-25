@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FolderPlus } from 'lucide-react';
-import { useEnvelopeStore } from '../store/envelopeStore';
+import { useEnvelopeStore } from '../stores/envelopeStore';
 
 export const AddEnvelopeView: React.FC = () => {
   const navigate = useNavigate();
   const { addEnvelope } = useEnvelopeStore();
-  
+
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
 

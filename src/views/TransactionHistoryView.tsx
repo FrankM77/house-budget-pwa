@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Filter, Search, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion'; // <--- NEW IMPORT
-import { useEnvelopeStore } from '../store/envelopeStore';
-import { useToastStore } from '../stores/useToastStore';
+import { useEnvelopeStore } from '../stores/envelopeStore';
+import { useToastStore } from '../stores/toastStore';
 import { SwipeableRow } from '../components/ui/SwipeableRow'; // <--- NEW IMPORT
 import EnvelopeTransactionRow from '../components/EnvelopeTransactionRow';
 import TransactionModal from '../components/modals/TransactionModal';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PlusCircle, Settings, List as ListIcon, Share, GitBranch, Wallet } from 'lucide-react';
-import { useEnvelopeStore } from '../store/envelopeStore';
+import { useEnvelopeStore } from '../stores/envelopeStore';
 import { DistributeFundsModal } from '../components/modals/DistributeFundsModal';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,10 +31,7 @@ export const EnvelopeListView: React.FC = () => {
           <button onClick={() => navigate('/settings')}>
             <Settings size={22} />
           </button>
-          <button onClick={() => alert('Export coming soon')}>
-            <Share size={22} />
-          </button>
-        </div>
+          </div>
 
         <div className="mt-4">
           <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">House Expenses</h1>

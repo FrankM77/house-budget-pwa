@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { useEnvelopeStore } from '../store/envelopeStore';
+import { useEnvelopeStore } from '../stores/envelopeStore';
 
 export const AddTransactionView: React.FC = () => {
   const navigate = useNavigate();

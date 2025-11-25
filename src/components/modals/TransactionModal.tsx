@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trash } from 'lucide-react';
-import { useEnvelopeStore } from '../../store/envelopeStore';
+import { useEnvelopeStore } from '../../stores/envelopeStore';
 import type { Transaction, Envelope } from '../../models/types';
 
 interface Props {

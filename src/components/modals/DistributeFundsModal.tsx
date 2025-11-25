@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Save, Download, Trash2, X } from 'lucide-react';
-import { useEnvelopeStore } from '../../store/envelopeStore'; 
+import { useEnvelopeStore } from '../../stores/envelopeStore'; 
 import type { DistributionTemplate } from '../../models/types'; 
 
 interface DistributeFundsModalProps {

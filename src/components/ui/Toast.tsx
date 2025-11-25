@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Undo2 } from 'lucide-react';
-import { useToastStore } from '../../stores/useToastStore';
+import { useToastStore } from '../../stores/toastStore';
 
 export const Toast: React.FC = () => {
   const { message, type, isVisible, undoAction, hideToast } = useToastStore();

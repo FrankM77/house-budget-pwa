@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useEnvelopeStore } from '../../store/envelopeStore';
+import { useEnvelopeStore } from '../../stores/envelopeStore';
 import type { Envelope } from '../../models/types';
 
 interface Props {

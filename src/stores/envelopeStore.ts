@@ -279,7 +279,7 @@ export const useEnvelopeStore = create<EnvelopeState>()(
       updateTransaction: (updatedTx: Transaction) => {
         set((state) => {
           const oldTransaction = state.transactions.find((tx) => tx.id === updatedTx.id);
-          
+
           if (!oldTransaction) {
             console.warn('Transaction not found');
             return state;
@@ -350,8 +350,8 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             return state;
           }
 
-          const balanceReversal = transaction.type === 'Income' 
-            ? -transaction.amount 
+          const balanceReversal = transaction.type === 'Income'
+            ? -transaction.amount
             : transaction.amount;
 
           const isTransfer = !!transaction.transferId;
@@ -362,7 +362,7 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             const pairedTransaction = state.transactions.find(
               (tx) => tx.transferId === transaction.transferId && tx.id !== transactionId
             );
-            
+
             if (pairedTransaction) {
               transactionsToDelete.push(pairedTransaction.id);
               envelopesToUpdate.push(pairedTransaction.envelopeId);
