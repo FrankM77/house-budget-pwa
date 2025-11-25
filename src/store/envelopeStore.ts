@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import type { Envelope, Transaction } from '../models/types';
+import type { Envelope, Transaction, DistributionTemplate } from '../models/types'; // Make sure DistributionTemplate is in types.ts
 
 interface EnvelopeState {
   envelopes: Envelope[];
   transactions: Transaction[];
-  
+  distributionTemplates: DistributionTemplate[]; // <--- ADDED
+
   // Envelope actions
   addEnvelope: (name: string, initialBalance: number) => void;
   deleteEnvelope: (id: string) => void;
@@ -19,6 +20,10 @@ interface EnvelopeState {
   transferFunds: (fromEnvelopeId: string, toEnvelopeId: string, amount: number, note: string, date?: Date | string) => void;
   deleteTransaction: (transactionId: string) => void;
   restoreTransaction: (transaction: Transaction) => void;
+
+  // Template actions
+  saveTemplate: (name: string, distributions: Record<string, number>, note?: string) => void; // <--- ADDED
+  deleteTemplate: (id: string) => void; // <--- ADDED
 }
 
 export const useEnvelopeStore = create<EnvelopeState>()(
@@ -26,6 +31,7 @@ export const useEnvelopeStore = create<EnvelopeState>()(
     (set) => ({
       envelopes: [],
       transactions: [],
+      distributionTemplates: [], // <--- ADDED
 
       // Add a new envelope with optional initial balance
       addEnvelope: (name: string, initialBalance: number = 0) => {
@@ -42,7 +48,6 @@ export const useEnvelopeStore = create<EnvelopeState>()(
           envelopes: [...state.envelopes, newEnvelope],
         }));
 
-        // If there's an initial balance, create an income transaction
         if (initialBalance > 0) {
           const initialTransaction: Transaction = {
             id: uuidv4(),
@@ -60,12 +65,31 @@ export const useEnvelopeStore = create<EnvelopeState>()(
         }
       },
 
-      // Delete an envelope and all its transactions
+      // Delete an envelope, its transactions, AND clean up templates
       deleteEnvelope: (id: string) => {
-        set((state) => ({
-          envelopes: state.envelopes.filter((env) => env.id !== id),
-          transactions: state.transactions.filter((tx) => tx.envelopeId !== id),
-        }));
+        set((state) => {
+            // 1. Remove Envelope & Transactions
+            const newEnvelopes = state.envelopes.filter((env) => env.id !== id);
+            const newTransactions = state.transactions.filter((tx) => tx.envelopeId !== id);
+
+            // 2. Clean up Templates (Remove reference to this envelope)
+            const newTemplates = state.distributionTemplates
+              .map((template) => {
+                const newDistributions = { ...template.distributions };
+                if (newDistributions[id]) {
+                  delete newDistributions[id];
+                }
+                return { ...template, distributions: newDistributions };
+              })
+              // Remove empty templates
+              .filter((template) => Object.keys(template.distributions).length > 0);
+
+            return {
+              envelopes: newEnvelopes,
+              transactions: newTransactions,
+              distributionTemplates: newTemplates,
+            };
+        });
       },
 
       // Rename an envelope
@@ -150,7 +174,6 @@ export const useEnvelopeStore = create<EnvelopeState>()(
               : date.toISOString()
             : new Date().toISOString();
 
-          // Find both envelopes
           const fromEnvelope = state.envelopes.find((env) => env.id === fromEnvelopeId);
           const toEnvelope = state.envelopes.find((env) => env.id === toEnvelopeId);
 
@@ -159,10 +182,8 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             return state;
           }
 
-          // Generate a shared transfer ID to link the two transactions
           const transferId = uuidv4();
 
-          // Create expense transaction for the "from" envelope
           const expenseTransaction: Transaction = {
             id: uuidv4(),
             date: transactionDate,
@@ -174,7 +195,6 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             transferId,
           };
 
-          // Create income transaction for the "to" envelope
           const incomeTransaction: Transaction = {
             id: uuidv4(),
             date: transactionDate,
@@ -186,7 +206,6 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             transferId,
           };
 
-          // Add note to descriptions if provided
           if (note) {
             expenseTransaction.description += ` (${note})`;
             incomeTransaction.description += ` (${note})`;
@@ -196,14 +215,12 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             transactions: [...state.transactions, expenseTransaction, incomeTransaction],
             envelopes: state.envelopes.map((env) => {
               if (env.id === fromEnvelopeId) {
-                // Deduct from source envelope
                 return {
                   ...env,
                   currentBalance: env.currentBalance - amount,
                   lastUpdated: new Date().toISOString(),
                 };
               } else if (env.id === toEnvelopeId) {
-                // Add to target envelope
                 return {
                   ...env,
                   currentBalance: env.currentBalance + amount,
@@ -219,7 +236,6 @@ export const useEnvelopeStore = create<EnvelopeState>()(
       // Update an existing transaction and adjust envelope balance
       updateTransaction: (updatedTx: Transaction) => {
         set((state) => {
-          // Find the old transaction
           const oldTransaction = state.transactions.find((tx) => tx.id === updatedTx.id);
           
           if (!oldTransaction) {
@@ -227,20 +243,11 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             return state;
           }
 
-          // Calculate the balance adjustment
           let balanceAdjustment = 0;
 
-          // If the envelope changed, we need to revert old and apply new
           if (oldTransaction.envelopeId !== updatedTx.envelopeId) {
-            // Revert the old transaction from old envelope
-            const oldAmount = oldTransaction.type === 'Income' 
-              ? -oldTransaction.amount 
-              : oldTransaction.amount;
-            
-            // Apply new transaction to new envelope
-            const newAmount = updatedTx.type === 'Income' 
-              ? updatedTx.amount 
-              : -updatedTx.amount;
+            const oldAmount = oldTransaction.type === 'Income' ? -oldTransaction.amount : oldTransaction.amount;
+            const newAmount = updatedTx.type === 'Income' ? updatedTx.amount : -updatedTx.amount;
 
             return {
               transactions: state.transactions.map((tx) =>
@@ -248,14 +255,12 @@ export const useEnvelopeStore = create<EnvelopeState>()(
               ),
               envelopes: state.envelopes.map((env) => {
                 if (env.id === oldTransaction.envelopeId) {
-                  // Revert old transaction
                   return {
                     ...env,
                     currentBalance: env.currentBalance + oldAmount,
                     lastUpdated: new Date().toISOString(),
                   };
                 } else if (env.id === updatedTx.envelopeId) {
-                  // Apply new transaction
                   return {
                     ...env,
                     currentBalance: env.currentBalance + newAmount,
@@ -267,20 +272,12 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             };
           }
 
-          // Same envelope, calculate the difference
           if (oldTransaction.type === updatedTx.type) {
-            // Same type, calculate amount difference
             const amountDiff = updatedTx.amount - oldTransaction.amount;
             balanceAdjustment = updatedTx.type === 'Income' ? amountDiff : -amountDiff;
           } else {
-            // Type changed (Income <-> Expense)
-            // Revert old and apply new
-            const revertOld = oldTransaction.type === 'Income' 
-              ? -oldTransaction.amount 
-              : oldTransaction.amount;
-            const applyNew = updatedTx.type === 'Income' 
-              ? updatedTx.amount 
-              : -updatedTx.amount;
+            const revertOld = oldTransaction.type === 'Income' ? -oldTransaction.amount : oldTransaction.amount;
+            const applyNew = updatedTx.type === 'Income' ? updatedTx.amount : -updatedTx.amount;
             balanceAdjustment = revertOld + applyNew;
           }
 
@@ -301,10 +298,9 @@ export const useEnvelopeStore = create<EnvelopeState>()(
         });
       },
 
-      // Delete a transaction and reverse its balance impact
+      // Delete a transaction and reverse its balance impact (Resilient Version)
       deleteTransaction: (transactionId: string) => {
         set((state) => {
-          // Find the transaction to delete
           const transaction = state.transactions.find((tx) => tx.id === transactionId);
 
           if (!transaction) {
@@ -312,21 +308,15 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             return state;
           }
 
-
-          // Calculate the balance reversal
-          // If it was income, we need to subtract it back
-          // If it was expense, we need to add it back
           const balanceReversal = transaction.type === 'Income' 
             ? -transaction.amount 
             : transaction.amount;
 
-          // Check if this is a transfer (has a transferId)
           const isTransfer = !!transaction.transferId;
           const transactionsToDelete = [transactionId];
           const envelopesToUpdate: string[] = [transaction.envelopeId];
 
           if (isTransfer) {
-            // Find the paired transaction
             const pairedTransaction = state.transactions.find(
               (tx) => tx.transferId === transaction.transferId && tx.id !== transactionId
             );
@@ -338,7 +328,6 @@ export const useEnvelopeStore = create<EnvelopeState>()(
           }
 
           const updatedEnvelopes = state.envelopes.map((env) => {
-            // Update the envelope of the deleted transaction
             if (env.id === transaction.envelopeId) {
               const newBalance = env.currentBalance + balanceReversal;
               return {
@@ -348,7 +337,6 @@ export const useEnvelopeStore = create<EnvelopeState>()(
               };
             }
 
-            // If there's a paired transfer transaction, update that envelope too
             if (isTransfer && envelopesToUpdate.includes(env.id) && env.id !== transaction.envelopeId) {
               const pairedTx = state.transactions.find(
                 (tx) => tx.transferId === transaction.transferId && tx.id !== transactionId
@@ -369,32 +357,26 @@ export const useEnvelopeStore = create<EnvelopeState>()(
             return env;
           });
 
-
           return {
-            // Remove the transaction(s)
             transactions: state.transactions.filter(
               (tx) => !transactionsToDelete.includes(tx.id)
             ),
-            // Update the envelope balance(s)
             envelopes: updatedEnvelopes,
           };
         });
       },
 
       // Restore a previously deleted transaction
+      // NOTE: For Transfers, this only restores the single transaction record passed in.
+      // It does not currently restore the paired transfer if it was deleted.
       restoreTransaction: (transaction: Transaction) => {
         set((state) => {
-          // Check if transaction already exists (avoid duplicates)
           const exists = state.transactions.some((tx) => tx.id === transaction.id);
-          if (exists) {
-            console.warn('Transaction already exists, skipping restore');
-            return state;
-          }
+          if (exists) return state;
 
-          // Calculate balance impact (opposite of delete)
           const balanceImpact = transaction.type === 'Income'
-            ? transaction.amount  // Add income back
-            : -transaction.amount; // Subtract expense back
+            ? transaction.amount
+            : -transaction.amount;
 
           return {
             transactions: [...state.transactions, transaction],
@@ -411,6 +393,32 @@ export const useEnvelopeStore = create<EnvelopeState>()(
           };
         });
       },
+
+      // --- TEMPLATE ACTIONS (ADDED) ---
+      saveTemplate: (name: string, distributions: Record<string, number>, note: string = "") => {
+        const cleanDistributions: Record<string, number> = {};
+        Object.entries(distributions).forEach(([envId, amount]) => {
+            if (amount > 0) cleanDistributions[envId] = amount;
+        });
+
+        const newTemplate: DistributionTemplate = {
+          id: uuidv4(),
+          name,
+          distributions: cleanDistributions,
+          lastUsed: new Date().toISOString(),
+          note: note
+        };
+
+        set((state) => ({
+          distributionTemplates: [...state.distributionTemplates, newTemplate]
+        }));
+      },
+
+      deleteTemplate: (id: string) => {
+        set((state) => ({
+          distributionTemplates: state.distributionTemplates.filter(t => t.id !== id)
+        }));
+      },
     }),
     {
       name: 'envelope-storage',
@@ -418,4 +426,3 @@ export const useEnvelopeStore = create<EnvelopeState>()(
     }
   )
 );
-
