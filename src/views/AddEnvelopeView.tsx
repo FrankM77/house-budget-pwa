@@ -23,19 +23,19 @@ export const AddEnvelopeView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header */}
-      <header className="bg-white border-b px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 sticky top-0 z-10 flex items-center shadow-sm">
-        <button onClick={() => navigate('/')} className="mr-3 text-gray-600 hover:text-gray-900">
+      <header className="bg-white dark:bg-black border-b dark:border-zinc-800 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3 sticky top-0 z-10 flex items-center shadow-sm">
+        <button onClick={() => navigate('/')} className="mr-3 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white">
           <ArrowLeft size={24} />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">New Envelope</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">New Envelope</h1>
       </header>
 
       <div className="p-4 max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 bg-blue-50 border-b border-blue-100 flex justify-center py-8">
-            <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden">
+          <div className="p-6 bg-blue-50 dark:bg-zinc-800 border-b border-blue-100 dark:border-zinc-700 flex justify-center py-8">
+            <div className="w-20 h-20 bg-blue-100 dark:bg-zinc-700 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center">
               <FolderPlus size={40} />
             </div>
           </div>
@@ -43,7 +43,7 @@ export const AddEnvelopeView: React.FC = () => {
           <form onSubmit={handleSave} className="p-6 space-y-6">
             {/* Name Input */}
             <div className="space-y-2">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                 Envelope Name
               </label>
               <input
@@ -52,7 +52,7 @@ export const AddEnvelopeView: React.FC = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Groceries, Rent, Fun Money"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 autoFocus
                 required
               />
@@ -60,11 +60,11 @@ export const AddEnvelopeView: React.FC = () => {
 
             {/* Initial Balance Input */}
             <div className="space-y-2">
-              <label htmlFor="balance" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="balance" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                 Initial Balance (Optional)
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 font-semibold">$</span>
                 <input
                   type="number"
                   id="balance"
@@ -77,10 +77,10 @@ export const AddEnvelopeView: React.FC = () => {
                   }}
                   placeholder="0.00"
                   step="0.01"
-                  className="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  className="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 />
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-zinc-500">
                 You can also add money later via the "Distribute Funds" screen.
               </p>
             </div>
@@ -90,7 +90,7 @@ export const AddEnvelopeView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/')}
-                className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-colors"
+                className="flex-1 py-3 px-4 rounded-xl border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 font-semibold bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
               >
                 Cancel
               </button>
@@ -98,7 +98,7 @@ export const AddEnvelopeView: React.FC = () => {
                 type="submit"
                 disabled={!name.trim()}
                 className={`flex-1 py-3 px-4 rounded-xl font-semibold shadow-sm text-white transition-colors ${
-                  name.trim() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'
+                  name.trim() ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600' : 'bg-gray-300 dark:bg-zinc-600 cursor-not-allowed'
                 }`}
               >
                 Create Envelope
