@@ -18,40 +18,7 @@ const formatCurrency = (amount: number): string => {
   }).format(amount);
 };
 
-// Helper to format date
-const formatDate = (date: any): string => {
-    // Handle different date formats
-    let d: Date;
-
-    // 1. Handle Firebase Timestamp objects
-    if (date && typeof date === 'object' && date.toDate && typeof date.toDate === 'function') {
-        d = date.toDate();
-    }
-    // 2. Handle strings
-    else if (typeof date === 'string') {
-        d = new Date(date);
-    }
-    // 3. Handle numbers (timestamps)
-    else if (typeof date === 'number') {
-        // Convert numeric date (legacy Apple timestamp) to Date
-        const APPLE_EPOCH_OFFSET = 978307200;
-        const jsTimestamp = (date + APPLE_EPOCH_OFFSET) * 1000;
-        d = new Date(jsTimestamp);
-    }
-    // 4. Handle Date objects
-    else if (date instanceof Date) {
-        d = date;
-    } else {
-        return 'Invalid Date';
-    }
-
-    // Check if the date is valid
-    if (isNaN(d.getTime())) {
-        return 'Invalid Date';
-    }
-
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-};
+// Removed unused formatDate function
 
 const EnvelopeDetail: React.FC = () => {
     // Rule #4: Get the ID from the route params
@@ -209,6 +176,7 @@ const EnvelopeDetail: React.FC = () => {
                                     transition={{ duration: 0.2 }}
                                 >
                                     <SwipeableRow onDelete={() => {
+                                      if (!transaction.id) return;
                                       const transactionToDelete = { ...transaction }; // Create a copy
                                       deleteTransaction(transaction.id);
                                       showToast(
@@ -265,7 +233,7 @@ const EnvelopeDetail: React.FC = () => {
                 <TransferModal
                     isVisible={showingTransfer}
                     onClose={() => setShowingTransfer(false)}
-                    sourceEnvelope={currentEnvelope}
+                    sourceEnvelope={currentEnvelope as any}
                 />
             )}
         </div>

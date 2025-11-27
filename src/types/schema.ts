@@ -4,7 +4,7 @@ import Decimal from 'decimal.js';
 // 1. Transaction Type
 // Equivalent to your Swift 'struct Transaction'
 export interface Transaction {
-  id: string; 
+  id: string;
   envelopeId: string;
   amount: string; // Stored as string to prevent math errors
   date: Timestamp;
@@ -12,6 +12,7 @@ export interface Transaction {
   reconciled: boolean;
   type: 'income' | 'expense' | 'transfer';
   transferId?: string | null;
+  userId?: string;
 }
 
 // 2. Distribution Template Type

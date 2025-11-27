@@ -190,12 +190,13 @@ export const DistributeFundsModal: React.FC<DistributeFundsModalProps> = ({ isOp
 
         {/* Allocations List */}
         <div className="p-4 space-y-3">
-          {activeEnvelopes.map((env) => {
-            const currentAlloc = allocations[env.id] || 0;
+          {activeEnvelopes.filter(env => env.id).map((env) => {
+            const envId = env.id!;
+            const currentAlloc = allocations[envId] || 0;
             const percent = totalDistributed > 0 ? Math.round((currentAlloc / totalDistributed) * 100) : 0;
 
             return (
-              <div key={env.id} className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800 flex items-center justify-between">
+              <div key={envId} className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800 flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-gray-900 dark:text-white">{env.name}</h3>
@@ -211,11 +212,11 @@ export const DistributeFundsModal: React.FC<DistributeFundsModalProps> = ({ isOp
                 </div>
                 <div className="w-32 relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500">$</span>
-                  <input 
+                  <input
                     type="number"
                     inputMode="decimal"
-                    value={allocations[env.id] === 0 ? '' : allocations[env.id]}
-                    onChange={(e) => handleAllocationChange(env.id, e.target.value)}
+                    value={allocations[envId] === 0 ? '' : allocations[envId]}
+                    onChange={(e) => handleAllocationChange(envId, e.target.value)}
                     placeholder="0"
                     className="w-full pl-6 pr-6 py-2 text-right bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 outline-none font-mono text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-zinc-600 appearance-none"
                   />

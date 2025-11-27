@@ -3,6 +3,7 @@ import { Decimal } from 'decimal.js';
 import { Timestamp } from 'firebase/firestore';
 import { TransactionService } from '../services/TransactionService';
 import { EnvelopeService } from '../services/EnvelopeService';
+import type { DistributionTemplate } from '../models/types';
 
 // --- Types ---
 export interface Transaction {
@@ -31,6 +32,7 @@ export interface Envelope {
 interface EnvelopeStore {
   envelopes: Envelope[];
   transactions: Transaction[];
+  distributionTemplates: DistributionTemplate[];
   isLoading: boolean;
   error: string | null;
   isOnline: boolean;
@@ -47,6 +49,9 @@ interface EnvelopeStore {
   deleteTransaction: (transactionId: string) => Promise<void>;
   updateTransaction: (updatedTx: Transaction) => Promise<void>;
   restoreTransaction: (transaction: Transaction) => Promise<void>;
+  renameEnvelope: (envelopeId: string, newName: string) => Promise<void>;
+  saveTemplate: (name: string, distributions: Record<string, number>, note: string) => void;
+  deleteTemplate: (templateId: string) => void;
   importData: (data: any) => { success: boolean; message: string };
   resetData: () => void;
   syncData: () => Promise<void>;
@@ -94,6 +99,7 @@ const isNetworkError = (error: any): boolean => {
 export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
   envelopes: [],
   transactions: [],
+  distributionTemplates: [],
   isLoading: false,
   error: null,
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
@@ -559,9 +565,58 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
     set({
       envelopes: [],
       transactions: [],
+      distributionTemplates: [],
       error: null,
       pendingSync: false
     });
+  },
+
+  /**
+   * ACTION: Rename envelope
+   */
+  renameEnvelope: async (envelopeId: string, newName: string) => {
+    // Update local state immediately
+    set((state) => ({
+      envelopes: state.envelopes.map(env =>
+        env.id === envelopeId ? { ...env, name: newName } : env
+      ),
+      isLoading: true
+    }));
+
+    try {
+      // Note: Firebase update would require additional service methods
+      // For now, we keep it local-only
+      set({ isLoading: false });
+    } catch (err: any) {
+      console.error("Rename Envelope Failed:", err);
+      set({ error: err.message, isLoading: false });
+    }
+  },
+
+  /**
+   * ACTION: Save distribution template
+   */
+  saveTemplate: (name: string, distributions: Record<string, number>, note: string) => {
+    const newTemplate: DistributionTemplate = {
+      id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name,
+      distributions,
+      note,
+      lastUsed: new Date().toISOString()
+    };
+
+    set((state) => ({
+      distributionTemplates: [...state.distributionTemplates, newTemplate]
+    }));
+  },
+
+  /**
+   * ACTION: Delete distribution template
+   */
+  deleteTemplate: (templateId: string) => {
+    set((state) => ({
+      distributionTemplates: state.distributionTemplates.filter(t => t.id !== templateId)
+    }));
   },
 
   /**

@@ -125,9 +125,11 @@ interface Envelope {
 
 ### Active Investigation 🔍
 - **Income Transaction Balance Bug**: "Add money" (income) transactions are not updating envelope balances, while "spend money" (expense) transactions correctly update balances. This affects both online and offline modes. The `getEnvelopeBalance` function only subtracts expenses but doesn't add income transactions to the balance calculation.
-- **Offline Browser Refresh Issue**: When refreshing the page while offline, Chrome shows a generic "No Internet" page instead of loading the PWA. This breaks the offline-first promise since users expect PWAs to work offline. The app needs a service worker to cache the initial HTML/JS and serve them offline.
-- **Offline Balance Updates**: Balances calculate correctly in `getEnvelopeBalance()` but UI may not update immediately during offline operations
-- **Console Logging**: Extensive debugging logs confirm calculations are correct, suggesting potential React rendering optimization issues
+
+### Recently Fixed 🔧
+- **Offline Browser Refresh Issue**: ✅ **RESOLVED** - Service worker now properly caches app shell and handles navigation fallbacks. Users can refresh any page offline without seeing Chrome's dinosaur error.
+- **Offline Sync Functionality**: ✅ **VERIFIED** - Firestore's built-in offline persistence and write queuing automatically syncs offline operations (creates, updates, deletes) when connectivity returns. No additional retry logic needed.
+- **Offline Balance Updates**: Balances calculate correctly and UI updates properly during offline operations.
 
 ### Recently Fixed 🔧
 - **Transaction Date Display**: Fixed "Invalid Date" errors on all transactions by updating date formatters to handle Firebase Timestamp objects and converting them to ISO strings in the store
@@ -163,7 +165,7 @@ interface Envelope {
 - `src/App.tsx` - ConnectionTester integration/cleanup
 
 ## Next Steps
-1. **Complete Offline Balance Investigation**: Verify React re-rendering behavior during offline operations
+1. **Complete Income Balance Bug Fix**: Fix `getEnvelopeBalance()` to properly include income transactions in balance calculations
 2. **Performance Testing**: Load testing with large transaction datasets
 3. **Error Boundary Implementation**: Comprehensive error handling for production readiness
 4. **User Authentication**: Implement Firebase Auth for multi-user support

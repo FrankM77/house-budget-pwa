@@ -7,7 +7,7 @@ import { useThemeStore } from '../stores/themeStore';
 export const SettingsView: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { envelopes, transactions, resetData, getEnvelopeBalance } = useEnvelopeStore();
+  const { envelopes, transactions, resetData, importData, getEnvelopeBalance } = useEnvelopeStore();
   const { theme, setTheme } = useThemeStore();
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -112,7 +112,7 @@ export const SettingsView: React.FC = () => {
         return [
           dateStr,
           `"${safeDesc}"`,
-          t.amount.toFixed(2),
+          parseFloat(t.amount).toFixed(2),
           t.type,
           `"${envName}"`,
           t.reconciled ? 'Yes' : 'No',

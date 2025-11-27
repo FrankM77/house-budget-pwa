@@ -9,6 +9,7 @@ export interface Transaction {
   reconciled: boolean;
   type: TransactionType;
   transferId?: string; // Links two sides of a transfer
+  userId?: string;
 }
 
 export interface Envelope {
@@ -18,6 +19,7 @@ export interface Envelope {
   lastUpdated: string; // ISO String
   isActive: boolean;
   orderIndex: number;
+  userId?: string;
 }
 
 export interface DistributionTemplate {

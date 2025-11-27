@@ -54,6 +54,9 @@ import {
     // 3. CREATE (For store.createEnvelope)
     createEnvelope: async (envelope: Envelope) => {
       const { userId, id: tempId, ...envelopeData } = envelope;
+      if (!userId) {
+        throw new Error('User ID is required to create envelope');
+      }
       console.log(`📝 EnvelopeService.createEnvelope: Adding envelope for user ${userId}:`, envelopeData);
       console.log(`🔍 Original envelope had temp ID: ${tempId}`);
 

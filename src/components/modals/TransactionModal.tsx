@@ -75,8 +75,8 @@ const TransactionModal: React.FC<Props> = ({ isVisible, onClose, mode, currentEn
   };
 
   const handleDelete = () => {
-    if (!initialTransaction) return;
-    
+    if (!initialTransaction || !initialTransaction.id) return;
+
     if (window.confirm('Are you sure you want to delete this transaction?')) {
       deleteTransaction(initialTransaction.id);
       onClose();

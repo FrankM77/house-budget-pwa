@@ -75,7 +75,7 @@ export const TransactionHistoryView: React.FC = () => {
         }
 
         // 3. Type Filter
-        if (selectedType !== 'All' && t.type !== selectedType) {
+        if (selectedType !== 'All' && t.type !== selectedType.toLowerCase()) {
           return false;
         }
 
@@ -261,6 +261,7 @@ export const TransactionHistoryView: React.FC = () => {
                   >
                     {/* WRAPPER 3: SwipeableRow handles the gesture */}
                     <SwipeableRow onDelete={() => {
+                      if (!transaction.id) return;
                       const transactionToDelete = { ...transaction }; // Create a copy
                       deleteTransaction(transaction.id);
                       showToast(

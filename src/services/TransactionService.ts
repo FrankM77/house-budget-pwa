@@ -56,6 +56,9 @@ import {
     // 3. ADD (Create) - Updated to match store expectation
     addTransaction: async (transaction: Transaction) => {
       const { userId, id: tempId, ...transactionData } = transaction;
+      if (!userId) {
+        throw new Error('User ID is required to create transaction');
+      }
       console.log(`📝 TransactionService.addTransaction: Adding transaction for user ${userId}:`, transactionData);
       console.log(`🔍 Original transaction had temp ID: ${tempId}`);
 
@@ -72,8 +75,8 @@ import {
         return result;
       } catch (error) {
         console.error(`💥 addDoc failed:`, error);
-        console.error(`Error code:`, error.code);
-        console.error(`Error message:`, error.message);
+        const err = error as Error;
+        console.error(`Error message:`, err.message);
         throw error;
       }
     },
@@ -94,8 +97,8 @@ import {
         console.log(`✅ TransactionService.deleteTransaction: Successfully deleted transaction ${transactionId}`);
       } catch (error) {
         console.error(`💥 TransactionService.deleteTransaction: Failed to delete transaction ${transactionId}:`, error);
-        console.error(`Error code:`, error.code);
-        console.error(`Error message:`, error.message);
+        const err = error as Error;
+        console.error(`Error message:`, err.message);
         throw error;
       }
     }

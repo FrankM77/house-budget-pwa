@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/house-budget-pwa/dev-sw.js?dev-sw', { scope: '/house-budget-pwa/', type: 'classic' })

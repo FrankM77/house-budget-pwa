@@ -5,11 +5,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vitejs.dev/config/
 export default defineConfig({
   // Keep your base URL if you are deploying to GitHub Pages
-  base: '/house-budget-pwa/', 
+  base: '/house-budget-pwa/',
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate', // Like "Automatic Updates" on App Store
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'House Expenses',
@@ -33,6 +33,18 @@ export default defineConfig({
             type: 'image/png'
           }
         ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 5000000,
+        // Handle all navigation requests within the app scope
+        navigateFallback: 'index.html',
+        navigateFallbackAllowlist: [/^\/house-budget-pwa/],
+        // Only deny API calls and files with extensions
+        navigateFallbackDenylist: [/^\/api\//, /^\/_/, /\/[^/?]+\.[^/]+$/],
+      },
+      devOptions: {
+        enabled: true // Allows testing SW in dev mode
       }
     })
   ],
