@@ -9,7 +9,7 @@ interface DistributeFundsModalProps {
 }
 
 export const DistributeFundsModal: React.FC<DistributeFundsModalProps> = ({ isOpen, onClose }) => {
-  const { envelopes, addToEnvelope, distributionTemplates, saveTemplate, deleteTemplate } = useEnvelopeStore();
+  const { envelopes, addToEnvelope, distributionTemplates, saveTemplate, deleteTemplate, getEnvelopeBalance } = useEnvelopeStore();
   
   const [depositAmount, setDepositAmount] = useState<string>('');
   const [allocations, setAllocations] = useState<Record<string, number>>({});
@@ -207,7 +207,7 @@ export const DistributeFundsModal: React.FC<DistributeFundsModalProps> = ({ isOp
                     )}
                   </div>
                   <div className="text-xs text-gray-400 dark:text-zinc-400">
-                    Budget: ${env.budget?.toFixed(2) || '0.00'}
+                    Balance: ${getEnvelopeBalance(env.id!).toNumber().toFixed(2)}
                   </div>
                 </div>
                 <div className="w-32 relative">
