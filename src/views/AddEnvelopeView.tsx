@@ -65,7 +65,7 @@ export const AddEnvelopeView: React.FC = () => {
             {/* Initial Balance Input */}
             <div className="space-y-2">
               <label htmlFor="balance" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
-                Initial Balance (Optional)
+                Initial Deposit (Optional)
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 font-semibold">$</span>
@@ -85,7 +85,7 @@ export const AddEnvelopeView: React.FC = () => {
                 />
               </div>
               <p className="text-xs text-gray-500 dark:text-zinc-500">
-                You can also add money later via the "Distribute Funds" screen.
+                This creates an "Initial Deposit" income transaction. You can also add money later via the "Distribute Funds" screen.
               </p>
             </div>
 

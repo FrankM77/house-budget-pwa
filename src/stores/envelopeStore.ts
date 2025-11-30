@@ -159,7 +159,7 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
         );
 
         // Migrate old appSettings format if needed
-        let migratedSettings = fetchedSettings;
+        let migratedSettings: AppSettings | null = fetchedSettings;
         if (fetchedSettings && 'isDarkMode' in fetchedSettings && !('theme' in fetchedSettings)) {
           // Migrate from old isDarkMode format to new theme format
           const oldSettings = fetchedSettings as any;
@@ -171,8 +171,10 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
           delete (migratedSettings as any).isDarkMode;
 
           // Update in Firebase to migrate the data
-          AppSettingsService.updateAppSettings(TEST_USER_ID, fetchedSettings.id, { theme: migratedSettings.theme })
-            .catch(err => console.warn('Failed to migrate app settings:', err));
+          if (migratedSettings && migratedSettings.id) {
+            AppSettingsService.updateAppSettings(TEST_USER_ID, migratedSettings.id, { theme: migratedSettings.theme })
+              .catch(err => console.warn('Failed to migrate app settings:', err));
+          }
         }
 
         return {
@@ -265,9 +267,16 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
    * Updates local state immediately, syncs with Firebase when possible
    */
   createEnvelope: async (newEnv) => {
+    // For initial deposits, use transaction system instead of budget field
+    // This ensures all money movements are properly tracked as transactions
+    const hasInitialDeposit = newEnv.budget && newEnv.budget > 0;
+    const envelopeData = hasInitialDeposit
+      ? { ...newEnv, budget: 0 } // Set budget to 0, use transactions for balance
+      : newEnv;
+
     // Generate temporary ID for immediate UI update
     const tempId = `temp-${Date.now()}-${Math.random()}`;
-    const envelopeWithId = { ...newEnv, id: tempId };
+    const envelopeWithId = { ...envelopeData, id: tempId };
 
     // Update local state immediately for responsive UI
     set((state) => ({
@@ -278,7 +287,7 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
     try {
       // Try to sync with Firebase (works offline thanks to persistence)
       const envelopeForService = {
-        ...newEnv,
+        ...envelopeData,
         userId: TEST_USER_ID
       } as any; // Type assertion to include userId
       const savedEnv = await EnvelopeService.createEnvelope(envelopeForService);
@@ -291,6 +300,23 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
         isLoading: false,
         pendingSync: false
       }));
+
+      // If there's an initial deposit, create an income transaction
+      if (hasInitialDeposit) {
+        console.log(`💰 Creating initial deposit transaction for envelope: ${savedEnv.name} (ID: ${savedEnv.id})`);
+        try {
+          await get().addTransaction({
+            description: 'Initial Deposit',
+            amount: newEnv.budget!.toString(),
+            envelopeId: savedEnv.id,
+            date: new Date().toISOString(),
+            type: 'income'
+          });
+          console.log(`✅ Initial deposit transaction created`);
+        } catch (error) {
+          console.error(`❌ Failed to create initial deposit transaction:`, error);
+        }
+      }
     } catch (err: any) {
       console.error("Create Envelope Failed:", err);
       if (isNetworkError(err)) {
@@ -609,9 +635,69 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
   },
 
   /**
-   * ACTION: Reset all data - Local only for safety
+   * ACTION: Reset all data - Delete from Firebase and clear local state
    */
-  resetData: () => {
+  resetData: async () => {
+    const state = get();
+
+    try {
+      // Delete all data from Firebase
+      console.log('🗑️ Starting complete data reset...');
+
+      // Delete all envelopes
+      for (const envelope of state.envelopes) {
+        if (envelope.id) {
+          try {
+            await EnvelopeService.deleteEnvelope(TEST_USER_ID, envelope.id);
+            console.log(`✅ Deleted envelope: ${envelope.name}`);
+          } catch (error) {
+            console.error(`❌ Failed to delete envelope ${envelope.name}:`, error);
+          }
+        }
+      }
+
+      // Delete all transactions
+      for (const transaction of state.transactions) {
+        if (transaction.id) {
+          try {
+            await TransactionService.deleteTransaction(TEST_USER_ID, transaction.id);
+            console.log(`✅ Deleted transaction: ${transaction.description}`);
+          } catch (error) {
+            console.error(`❌ Failed to delete transaction ${transaction.description}:`, error);
+          }
+        }
+      }
+
+      // Delete all templates
+      for (const template of state.distributionTemplates) {
+        if (template.id) {
+          try {
+            await DistributionTemplateService.deleteDistributionTemplate(TEST_USER_ID, template.id);
+            console.log(`✅ Deleted template: ${template.name}`);
+          } catch (error) {
+            console.error(`❌ Failed to delete template ${template.name}:`, error);
+          }
+        }
+      }
+
+      // Delete app settings
+      if (state.appSettings?.id) {
+        try {
+          await AppSettingsService.deleteAppSettings(TEST_USER_ID, state.appSettings.id);
+          console.log(`✅ Deleted app settings`);
+        } catch (error) {
+          console.error(`❌ Failed to delete app settings:`, error);
+        }
+      }
+
+      console.log('✅ Data reset complete - all Firebase data deleted');
+
+    } catch (error) {
+      console.error('❌ Error during data reset:', error);
+      // Continue with local state reset even if Firebase deletion fails
+    }
+
+    // Clear local state regardless of Firebase deletion success
     set({
       envelopes: [],
       transactions: [],
@@ -620,6 +706,8 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
       error: null,
       pendingSync: false
     });
+
+    console.log('✅ Local state cleared');
   },
 
   /**

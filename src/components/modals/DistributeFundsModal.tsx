@@ -70,13 +70,20 @@ export const DistributeFundsModal: React.FC<DistributeFundsModalProps> = ({ isOp
   };
 
   const handleLoadTemplate = (template: DistributionTemplate) => {
-    setAllocations(template.distributions);
-    const totalRequired = Object.values(template.distributions).reduce((sum, val) => sum + val, 0);
+    // Filter out allocations for envelopes that no longer exist to prevent false balance calculations
+    const validAllocations = Object.fromEntries(
+      Object.entries(template.distributions).filter(([envelopeId]) =>
+        activeEnvelopes.some(env => env.id === envelopeId)
+      )
+    );
+
+    setAllocations(validAllocations);
+    const totalRequired = Object.values(validAllocations).reduce((sum, val) => sum + val, 0);
     setDepositAmount(totalRequired.toFixed(2));
-    
+
     // UPDATED: Now pre-populating the note field
     setNote(template.note || "");
-    
+
     setShowLoadUI(false);
   };
 

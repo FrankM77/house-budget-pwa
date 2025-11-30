@@ -1,7 +1,6 @@
 import {
   collection,
   query,
-  orderBy,
   onSnapshot,
   setDoc,
   updateDoc,
@@ -9,7 +8,6 @@ import {
   addDoc,
   getDocs,
   deleteDoc,
-  where,
   limit
 } from 'firebase/firestore';
 import { db } from '../firebase';

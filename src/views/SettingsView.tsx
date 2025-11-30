@@ -8,6 +8,9 @@ export const SettingsView: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { envelopes, transactions, distributionTemplates, resetData, importData, getEnvelopeBalance, appSettings, updateAppSettings, initializeAppSettings } = useEnvelopeStore();
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [lastBackupDate, setLastBackupDate] = useState<string>(() => {
+    return localStorage.getItem('lastBackupDate') || 'Never';
+  });
 
   const APPLE_EPOCH_OFFSET = 978307200;
 
@@ -92,6 +95,16 @@ export const SettingsView: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      // Update last backup date
+      const now = new Date().toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      localStorage.setItem('lastBackupDate', now);
+      setLastBackupDate(now);
+
       showStatus('success', 'Backup downloaded successfully.');
     } catch (error) {
       console.error(error);
@@ -190,15 +203,20 @@ export const SettingsView: React.FC = () => {
     event.target.value = '';
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (
       window.confirm(
-        'Are you sure? This will delete all envelopes, transactions, and templates. This action cannot be undone.'
+        'Are you sure? This will permanently delete all envelopes, transactions, templates, and settings from the cloud. This action cannot be undone.'
       )
     ) {
-      resetData();
-      showStatus('success', 'All data has been cleared.');
-      navigate('/');
+      try {
+        await resetData();
+        showStatus('success', 'All data has been permanently deleted.');
+        navigate('/');
+      } catch (error) {
+        console.error('Reset failed:', error);
+        showStatus('error', 'Failed to delete all data. Some data may remain.');
+      }
     }
   };
 
@@ -254,7 +272,7 @@ export const SettingsView: React.FC = () => {
                 <p className="text-xl font-semibold text-gray-900 dark:text-white">{dataSummary.templateCount}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-500">Last Updated</p>
+                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-500">Data Last Modified</p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{dataSummary.lastUpdated}</p>
               </div>
             </div>
@@ -315,7 +333,10 @@ export const SettingsView: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <Download className="text-blue-500" size={20} />
-                <span className="text-gray-900 dark:text-white font-medium">Create Backup</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-gray-900 dark:text-white font-medium">Create Backup</span>
+                  <span className="text-xs text-gray-500 dark:text-zinc-400">Last backup: {lastBackupDate}</span>
+                </div>
               </div>
               <ChevronRight className="text-gray-400" size={18} />
             </button>
@@ -349,22 +370,6 @@ export const SettingsView: React.FC = () => {
               accept=".json"
               className="hidden"
             />
-          </div>
-        </section>
-
-        {/* Template Management - Not implemented in Firebase version yet */}
-        <section>
-          <h2 className="text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase mb-2 px-1">Template Management</h2>
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-gray-100 dark:border-zinc-800 shadow-sm flex items-center gap-3">
-            <CheckCircle className="text-green-500" size={20} />
-            <div>
-              <div className="text-gray-900 dark:text-white font-medium">
-                Templates coming soon
-              </div>
-              <div className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
-                Distribution templates will be implemented in a future update.
-              </div>
-            </div>
           </div>
         </section>
 
