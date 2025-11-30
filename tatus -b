@@ -1,0 +1,37 @@
+[33m74debe4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Remove outdated backup JSON file - no longer needed
+[33m6e3a9a7[m Clean up repository: remove old MD files and reorganize
+[33m0bc805c[m Remove firebase.ts from tracking and add to .gitignore
+[33md1f9e51[m Fixed Envelope values not displaying correctly in Distribute Funds view
+[33m0474c1d[m Fixed add money not changing balances
+[33m6903f93[m Offline Browser Refresh, Offline Sync, Offline balance updates
+[33md68b9ca[m Security: Remove firebase.ts from git tracking to protect API keys
+[33m71f2c37[m Security: Add Firebase config and env files to .gitignore
+[33m6391cca[m feat: Migrate core engine to Firebase Firestore with Offline-First architecture
+[33m9421cb9[m Fixed hard coded light mode in AddEnvelopeView. It now uses Tailwind's dark mode classes, mirroring the rest of the app.
+[33m066aa63[m feat: implemented EnvelopeService and enabled offline persistence
+[33mdd8b818[m feat: Phase 2 setup - Added Firebase config, TransactionService, and Schema
+[33mb0ddd02[m Fix build error: Remove unused Share import from EnvelopeListView
+[33m4ef7ed8[m File restructure
+[33mc71188b[m Added the reconcile buttons back
+[33m78de73a[m Settings View files merged, UX update
+[33m06944c4[m Fixed import distribution templates
+[33m16d7519[m Fixed Swift json import
+[33mf3b36d8[m Ability to save templates, ensure templates are valid
+[33m930eccb[m Swipe delete undo
+[33m76c9625[m Fixed swipe/click conflicts
+[33mbdbfebb[m Implement swipe to delete in Envelope details view
+[33md0bd0f1[m Implemented swipe to delete a transaction
+[33m6acea55[m AddEnvelopeView Fix: Add dynamic padding to headers so the Notch/Island doesn't block buttons
+[33m44ce531[m Distribute Funds Fix: Add dynamic padding to headers so the Notch/Island doesn't block buttons
+[33m2246b91[m Fix: Adjust header padding to support iPhone Dynamic Island and Safe Area
+[33md0d0c1b[m Add CSV export
+[33md3a8872[m Add filtering to transaction history
+[33m2b2850d[m Transaction history is transactions are now editable. More info on each transaction row.
+[33mf7a3e73[m Remove selectable text and tap highlight
+[33m3cfd9b6[m Feat: Add offline PWA capabilities and auto-update support
+[33mbad884c[m Remove mock data used for testing
+[33m985ab67[m Add global history, dark/light/system setting, and PWA configuration
+[33ma290442[m feat: Implement Payday distribution, Transactions, and Settings
+[33m42050d3[m Added a script to automate saving to GitHub
+[33m3a39d89[m Feat: Complete Envelope Detail UI, Transaction Store, and Transfer Logic
+[33ma44a59a[m Phase 1: Initial scaffolding and store setup

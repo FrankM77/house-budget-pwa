@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Moon, Sun, Download, Upload, Trash2, CheckCircle, ChevronRight, FileText } from 'lucide-react';
+import { Download, Upload, Trash2, CheckCircle, ChevronRight, FileText } from 'lucide-react';
 import { useEnvelopeStore } from '../stores/envelopeStore';
 
 export const SettingsView: React.FC = () => {
@@ -11,14 +11,8 @@ export const SettingsView: React.FC = () => {
 
   const APPLE_EPOCH_OFFSET = 978307200;
 
-  const systemPrefersDark =
-    typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
-
   // Use appSettings theme, fallback to system
   const currentTheme = appSettings?.theme ?? 'system';
-
-  // Determine if dark mode is active based on theme setting
-  const isDarkMode = currentTheme === 'dark' || (currentTheme === 'system' && systemPrefersDark);
 
   // Initialize app settings if they don't exist
   useEffect(() => {
@@ -273,7 +267,9 @@ export const SettingsView: React.FC = () => {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                {isDarkMode ? <Moon className="text-purple-500" size={20} /> : <Sun className="text-orange-500" size={20} />}
+                {currentTheme === 'light' && <span className="text-orange-500 text-lg">☀️</span>}
+                {currentTheme === 'dark' && <span className="text-purple-500 text-lg">🌙</span>}
+                {currentTheme === 'system' && <span className="text-gray-500 text-lg">⚙️</span>}
                 <span className="text-gray-900 dark:text-white font-medium">Theme</span>
               </div>
               <span className="text-sm text-gray-500 dark:text-zinc-400 capitalize">{currentTheme}</span>
