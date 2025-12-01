@@ -46,7 +46,7 @@ export const AddTransactionView: React.FC = () => {
                 {sortedEnvelopes.map((env) => (
                   <button
                     key={env.id}
-                    onClick={() => navigate(`/envelope/${env.id}`)}
+                    onClick={() => navigate(`/envelope/${env.id}`, { state: { fromGlobalFAB: true } })}
                     className="w-full px-4 py-4 text-left flex items-center justify-between hover:bg-gray-50 dark:hover:bg-zinc-800 active:bg-gray-100 dark:active:bg-zinc-700 transition-colors"
                   >
                     <div className="flex flex-col">

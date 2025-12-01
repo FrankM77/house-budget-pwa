@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEnvelopeStore } from '../stores/envelopeStore';
 import { useToastStore } from '../stores/toastStore';
 import type { Transaction } from '../stores/envelopeStore';
@@ -26,9 +26,10 @@ const EnvelopeDetail: React.FC = () => {
     // Rule #2: Map @ObservedObject (viewModel) to Zustand store
     const { envelopes, transactions, fetchData, isLoading, deleteEnvelope, renameEnvelope, updateTransaction, deleteTransaction, restoreTransaction, getEnvelopeBalance } = useEnvelopeStore();
     const { showToast } = useToastStore();
-    
+
     // Rule #2: Map @State (envelope, showingAddMoney, etc.) to useState
     const navigate = useNavigate();
+    const location = useLocation();
     const [showingAddMoney, setShowingAddMoney] = useState(false);
     const [showingSpendMoney, setShowingSpendMoney] = useState(false);
     const [showingTransfer, setShowingTransfer] = useState(false);
@@ -67,7 +68,14 @@ const EnvelopeDetail: React.FC = () => {
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     // Rule #2: @Environment(\.dismiss) maps to navigate(-1)
-    const handleDone = () => navigate(-1);
+    const handleDone = () => {
+        // If user came from global FAB flow, navigate to home instead of back
+        if (location.state?.fromGlobalFAB) {
+            navigate('/');
+        } else {
+            navigate(-1);
+        }
+    };
     
     const handleDeleteEnvelope = () => {
         if (id) {
