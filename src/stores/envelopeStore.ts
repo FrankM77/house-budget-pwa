@@ -202,17 +202,41 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
           tx.id && !fetchedTransactions.some(fetched => fetched.id === tx.id) &&
           (!tx.id.startsWith('temp-') || mergedEnvelopeIds.has(tx.envelopeId)) // Keep temp transactions if they belong to a known envelope
         );
+        // For templates: if we're online, prefer Firebase data (local templates should be auto-synced by Firestore)
+        // If offline, keep local templates
+        let mergedTemplates: DistributionTemplate[];
+        let localOnlyTemplates: DistributionTemplate[] = [];
+        if (navigator.onLine) {
+          // Online: Use Firebase data as authoritative (local templates should be auto-synced by Firestore)
+          mergedTemplates = fetchedTemplates as DistributionTemplate[];
+          console.log(`🌐 Online mode: Using Firebase templates only (${mergedTemplates.length} templates)`);
+        } else {
+          // Offline: Merge Firebase + local templates
+          localOnlyTemplates = state.distributionTemplates.filter(template =>
+            template.id && !fetchedTemplates.some(fetched => fetched.id === template.id)
+          );
+          mergedTemplates = (fetchedTemplates as DistributionTemplate[]).concat(localOnlyTemplates);
+          console.log(`📴 Offline mode: Merged ${fetchedTemplates.length} Firebase + ${localOnlyTemplates.length} local templates`);
+        }
 
         console.log(`🔄 fetchData merge details:`);
         console.log(`  Store envelopes:`, state.envelopes.map(e => ({ id: e.id, name: e.name })));
         console.log(`  Firebase envelopes:`, fetchedEnvelopes.map(e => ({ id: e.id, name: e.name })));
         console.log(`  Store transactions:`, state.transactions.map(t => ({ id: t.id, envelopeId: t.envelopeId, description: t.description })));
         console.log(`  Firebase transactions:`, fetchedTransactions.map(t => ({ id: t.id, envelopeId: t.envelopeId, description: t.description })));
+        console.log(`  Store templates:`, state.distributionTemplates.map(t => ({ id: t.id, name: t.name })));
+        console.log(`  Firebase templates:`, fetchedTemplates.map(t => ({ id: t.id, name: t.name })));
         console.log(`  Local-only envelopes:`, localOnlyEnvelopes.map(e => ({ id: e.id, name: e.name })));
         console.log(`  Local-only transactions:`, localOnlyTransactions.map(t => ({ id: t.id, envelopeId: t.envelopeId, description: t.description })));
+        console.log(`  Local-only templates:`, localOnlyTemplates.map(t => ({ id: t.id, name: t.name })));
+
+        console.log(`  Total merged templates:`, mergedTemplates.length, mergedTemplates.map(t => ({ id: t.id, name: t.name })));
 
         const mergedEnvelopes = storeEnvelopes.concat(localOnlyEnvelopes);
         const mergedTransactions = convertTimestamps(fetchedTransactions as any[]).concat(localOnlyTransactions);
+
+        console.log(`  Local-only envelopes:`, localOnlyEnvelopes.map(e => ({ id: e.id, name: e.name })));
+        console.log(`  Merged envelopes will be:`, mergedEnvelopes.length, mergedEnvelopes.map(e => ({ id: e.id, name: e.name })));
 
         // Migrate old appSettings format if needed
         let migratedSettings: AppSettings | null = fetchedSettings;
@@ -236,7 +260,7 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
         return {
           envelopes: mergedEnvelopes,
           transactions: mergedTransactions,
-          distributionTemplates: fetchedTemplates as DistributionTemplate[],
+          distributionTemplates: mergedTemplates,
           appSettings: migratedSettings,
           isLoading: false,
           pendingSync: false
@@ -889,6 +913,7 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
    * ACTION: Save distribution template
    */
   saveTemplate: async (name: string, distributions: Record<string, number>, note: string) => {
+    console.log('📝 saveTemplate called with:', { name, distributions, note });
     try {
       const templateData: DistributionTemplate = {
         id: `temp-${Date.now()}`, // Temporary ID, will be replaced by Firebase
@@ -899,16 +924,40 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
         distributions
       };
 
-      // Try Firebase save first
-      const savedTemplate = await DistributionTemplateService.createDistributionTemplate(templateData);
+      console.log('🔄 Attempting Firebase template save...');
+      console.log('📶 Current online status:', navigator.onLine);
 
-      set((state) => ({
-        distributionTemplates: [...state.distributionTemplates, savedTemplate]
-      }));
+      // Try Firebase save first with timeout for offline detection
+      try {
+        const firebasePromise = DistributionTemplateService.createDistributionTemplate(templateData);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Firebase timeout - likely offline')), 5000)
+        );
+        const savedTemplate = await Promise.race([firebasePromise, timeoutPromise]) as DistributionTemplate;
+        console.log('✅ Firebase template save succeeded (online mode):', savedTemplate);
 
-      console.log('✅ Template saved to Firebase:', savedTemplate);
+        set((state) => {
+          const newTemplates = [...state.distributionTemplates, savedTemplate];
+          console.log('🔄 Updating store - old templates:', state.distributionTemplates.length, 'new templates:', newTemplates.length);
+          return {
+            distributionTemplates: newTemplates
+          };
+        });
+
+        console.log('✅ Template saved to Firebase:', savedTemplate);
+        console.log('📊 Store now has templates:', get().distributionTemplates.length);
+      } catch (firebaseError: any) {
+        console.log('🔥 Firebase template save failed or timed out:', firebaseError.message);
+        throw firebaseError; // Re-throw to trigger local fallback
+      }
     } catch (error) {
       console.error('❌ Failed to save template to Firebase, saving locally:', error);
+      console.log('🔍 Error details:', {
+        name: (error as any)?.name || 'Unknown',
+        message: (error as any)?.message || 'Unknown',
+        code: (error as any)?.code || 'Unknown',
+        isNetworkError: isNetworkError(error)
+      });
 
       // Fallback: save locally if Firebase fails
       const localTemplate: DistributionTemplate = {
@@ -920,11 +969,15 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
         distributions
       };
 
+      console.log('💾 Saving template locally (offline):', localTemplate);
+
       set((state) => ({
-        distributionTemplates: [...state.distributionTemplates, localTemplate]
+        distributionTemplates: [...state.distributionTemplates, localTemplate],
+        pendingSync: true // Mark for later sync
       }));
 
       console.log('✅ Template saved locally as fallback:', localTemplate);
+      console.log('📊 Store now has templates:', get().distributionTemplates.length);
     }
   },
 
@@ -1030,7 +1083,6 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
     }
 
     const envelopeTransactions = state.transactions.filter(t => t.envelopeId === envelopeId);
-    console.log(`📊 getEnvelopeBalance: Envelope ${envelope.name} (${envelopeId}) has ${envelopeTransactions.length} transactions`);
 
     const expenses = envelopeTransactions.filter(t => t.type === 'expense');
     const incomes = envelopeTransactions.filter(t => t.type === 'income');
@@ -1039,7 +1091,6 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
     const totalIncome = incomes.reduce((acc, curr) => acc.plus(new Decimal(curr.amount || 0)), new Decimal(0));
 
     const balance = totalIncome.minus(totalSpent);
-    console.log(`💸 getEnvelopeBalance: Envelope ${envelope.name} - Income: $${totalIncome.toNumber()}, Spent: $${totalSpent.toNumber()}, Balance: $${balance.toNumber()}`);
 
     return balance;
   }
