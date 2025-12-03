@@ -6,6 +6,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   // Keep your base URL if you are deploying to GitHub Pages
   base: '/house-budget-pwa/',
+  // Disable environment file loading to avoid permission issues
+  envDir: false,
   plugins: [
     react(),
     VitePWA({

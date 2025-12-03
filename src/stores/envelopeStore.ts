@@ -7,6 +7,27 @@ import { DistributionTemplateService } from '../services/DistributionTemplateSer
 import { AppSettingsService } from '../services/AppSettingsService';
 import type { DistributionTemplate, AppSettings } from '../models/types';
 
+// Fallback data loading when Firebase is unavailable
+const loadFallbackData = async (): Promise<any> => {
+  try {
+    console.log('🔄 Attempting to load fallback data from backup file...');
+    // Try to load the backup file - this will only work in development
+    const response = await fetch('/HouseBudget_Backup_2025-11-25.json');
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ Loaded fallback data:', {
+        envelopes: data.envelopes?.length || 0,
+        transactions: data.transactions?.length || 0,
+        templates: data.distributionTemplates?.length || 0
+      });
+      return data;
+    }
+  } catch (error) {
+    console.log('⚠️ Could not load fallback data:', error);
+  }
+  return null;
+};
+
 // --- Types ---
 export interface Transaction {
   id?: string;
@@ -40,6 +61,7 @@ interface EnvelopeStore {
   error: string | null;
   isOnline: boolean;
   pendingSync: boolean;
+  resetPending: boolean;
 
   // Actions
   fetchData: () => Promise<void>;
@@ -58,7 +80,8 @@ interface EnvelopeStore {
   updateAppSettings: (settings: Partial<AppSettings>) => Promise<void>;
   initializeAppSettings: () => Promise<void>;
   importData: (data: any) => { success: boolean; message: string };
-  resetData: () => void;
+  resetData: () => Promise<void>;
+  performFirebaseReset: () => Promise<void>;
   syncData: () => Promise<void>;
   updateOnlineStatus: () => Promise<void>;
   getEnvelopeBalance: (envelopeId: string) => Decimal;
@@ -142,35 +165,77 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
   error: null,
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   pendingSync: false,
+  resetPending: false,
 
   /**
    * SYNC: Pulls all data from Firestore (Like Pull-to-Refresh)
    * Works offline thanks to Firestore persistence
+   * Note: If resetPending is true, this will perform Firebase reset instead of fetching
    */
   fetchData: async () => {
+    const state = get();
+    
+    // If reset is pending, perform reset instead of fetching
+    if (state.resetPending) {
+      console.log('🔄 fetchData: Reset pending detected, performing Firebase reset instead...');
+      await get().performFirebaseReset();
+      return;
+    }
+    
+    console.log('🔄 fetchData: Starting data fetch for user:', TEST_USER_ID);
     set({ isLoading: true, error: null });
     try {
       // Fetch collections in parallel (works offline with Firestore persistence)
-      const [fetchedEnvelopes, fetchedTransactions, fetchedTemplates, fetchedSettings] = await Promise.all([
+      console.log('🔄 fetchData: Making Firebase calls...');
+      let fetchedEnvelopes, fetchedTransactions, fetchedTemplates, fetchedSettings;
+      [fetchedEnvelopes, fetchedTransactions, fetchedTemplates, fetchedSettings] = await Promise.all([
         EnvelopeService.getAllEnvelopes(TEST_USER_ID).catch(err => {
-          console.warn('Failed to fetch envelopes:', err);
+          console.error('❌ Failed to fetch envelopes:', err);
           return [];
         }),
         TransactionService.getAllTransactions(TEST_USER_ID).catch(err => {
-          console.warn('Failed to fetch transactions:', err);
+          console.error('❌ Failed to fetch transactions:', err);
           return [];
         }),
         DistributionTemplateService.getAllDistributionTemplates(TEST_USER_ID).catch(err => {
-          console.warn('Failed to fetch templates:', err);
+          console.error('❌ Failed to fetch templates:', err);
           return [];
         }),
         AppSettingsService.getAppSettings(TEST_USER_ID).catch(err => {
-          console.warn('Failed to fetch settings:', err);
+          console.error('❌ Failed to fetch settings:', err);
           return null;
         })
       ]);
 
-      // Merge with existing data to preserve locally created items that might not be in Firebase yet
+      console.log('✅ fetchData: Firebase calls completed');
+      console.log('📊 Fetched data counts:', {
+        envelopes: fetchedEnvelopes?.length || 0,
+        transactions: fetchedTransactions?.length || 0,
+        templates: fetchedTemplates?.length || 0,
+        settings: fetchedSettings ? 'found' : 'null'
+      });
+
+      // Check if we got any data from Firebase
+      const hasFirebaseData = (fetchedEnvelopes?.length || 0) > 0 ||
+                             (fetchedTransactions?.length || 0) > 0 ||
+                             (fetchedTemplates?.length || 0) > 0;
+
+      // If no Firebase data, try to load fallback data
+      let fallbackData = null;
+      if (!hasFirebaseData) {
+        console.log('⚠️ No data from Firebase, loading fallback data...');
+        fallbackData = await loadFallbackData();
+        if (fallbackData) {
+          console.log('✅ Using fallback data for initialization');
+          // Use fallback data
+          fetchedEnvelopes = fallbackData.envelopes || [];
+          fetchedTransactions = fallbackData.transactions || [];
+          fetchedTemplates = fallbackData.distributionTemplates || [];
+          fetchedSettings = fallbackData.appSettings || null;
+        }
+      }
+
+        // Merge with existing data to preserve locally created items that might not be in Firebase yet
       set((state) => {
         // Convert Firebase Timestamps to strings for store compatibility
         const convertTimestamps = (transactions: any[]): Transaction[] => {
@@ -193,13 +258,27 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
           orderIndex: firebaseEnv.orderIndex ?? 0
         });
 
+        // MIGRATION: Update envelopes that don't have orderIndex
+        const envelopesToUpdate = fetchedEnvelopes.filter(env => !('orderIndex' in env));
+        if (envelopesToUpdate.length > 0) {
+          console.log(`🔄 Migrating ${envelopesToUpdate.length} envelopes to add orderIndex...`);
+          envelopesToUpdate.forEach((env, index) => {
+            // Assign sequential orderIndex starting from 0
+            // This ensures consistent ordering across store and Firebase
+            const orderIndex = index;
+            EnvelopeService.saveEnvelope(TEST_USER_ID, { ...env, orderIndex })
+              .then(() => console.log(`✅ Migrated envelope ${env.name} with orderIndex ${orderIndex}`))
+              .catch(err => console.warn(`Failed to migrate envelope ${env.id}:`, err));
+          });
+        }
+
         const storeEnvelopes = fetchedEnvelopes.map(convertEnvelope);
 
         // Merge: prefer Firebase data, but keep local items that aren't in Firebase yet
-        const mergedEnvelopeIds = new Set([...state.envelopes.map(e => e.id), ...fetchedEnvelopes.map(e => e.id)]);
-        const localOnlyEnvelopes = state.envelopes.filter(env => env.id && !fetchedEnvelopes.some(fetched => fetched.id === env.id) && !env.id.startsWith('temp-'));
-        const localOnlyTransactions = state.transactions.filter(tx =>
-          tx.id && !fetchedTransactions.some(fetched => fetched.id === tx.id) &&
+        const mergedEnvelopeIds = new Set([...state.envelopes.map((e: Envelope) => e.id), ...(fetchedEnvelopes as Envelope[]).map((e: Envelope) => e.id)]);
+        const localOnlyEnvelopes = state.envelopes.filter((env: Envelope) => env.id && !(fetchedEnvelopes as Envelope[]).some((fetched: Envelope) => fetched.id === env.id) && !env.id.startsWith('temp-'));
+        const localOnlyTransactions = state.transactions.filter((tx: Transaction) =>
+          tx.id && !(fetchedTransactions as Transaction[]).some((fetched: Transaction) => fetched.id === tx.id) &&
           (!tx.id.startsWith('temp-') || mergedEnvelopeIds.has(tx.envelopeId)) // Keep temp transactions if they belong to a known envelope
         );
         // For templates: if we're online, prefer Firebase data (local templates should be auto-synced by Firestore)
@@ -362,8 +441,8 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
     // This ensures all money movements are properly tracked as transactions
     const hasInitialDeposit = newEnv.budget && newEnv.budget > 0;
     const envelopeData = hasInitialDeposit
-      ? { ...newEnv, budget: 0 } // Set budget to 0, use transactions for balance
-      : newEnv;
+      ? { ...newEnv, budget: 0, orderIndex: newEnv.orderIndex ?? 0 } // Set budget to 0, use transactions for balance
+      : { ...newEnv, orderIndex: newEnv.orderIndex ?? 0 };
 
     // Generate temporary ID for immediate UI update
     const tempId = `temp-${Date.now()}-${Math.random()}`;
@@ -516,10 +595,28 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
 
   /**
    * SYNC: Manual sync for when coming back online
+   * Handles both normal sync (fetchData) and pending resets (performFirebaseReset)
    */
   syncData: async () => {
     if (!get().isOnline) return;
 
+    const state = get();
+    
+    // If reset is pending, perform Firebase reset instead of fetching data
+    if (state.resetPending) {
+      console.log('🔄 Sync detected pending reset - performing Firebase reset...');
+      set({ pendingSync: true });
+      try {
+        await get().performFirebaseReset();
+        console.log('✅ Pending reset completed during sync');
+      } catch (err) {
+        console.error("Firebase reset during sync failed:", err);
+        // Keep resetPending true so it retries next time
+      }
+      return;
+    }
+
+    // Normal sync: fetch data from Firebase
     set({ pendingSync: true });
     try {
       await get().fetchData();
@@ -844,79 +941,155 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
   },
 
   /**
-   * ACTION: Reset all data - Delete from Firebase and clear local state
+   * ACTION: Perform complete Firebase reset - Query Firebase directly and delete ALL documents
+   * This queries Firebase collections to find ALL documents (not just local cache) and deletes them
    */
-  resetData: async () => {
-    const state = get();
+  performFirebaseReset: async () => {
+    console.log('🗑️ performFirebaseReset: Starting complete Firebase reset...');
+    set({ isLoading: true });
 
     try {
-      // Delete all data from Firebase
-      console.log('🗑️ Starting complete data reset...');
+      // Query Firebase directly to get ALL documents from each collection
+      console.log('📡 Querying Firebase for all data to delete...');
+      
+      const [allEnvelopes, allTransactions, allTemplates, allSettings] = await Promise.all([
+        EnvelopeService.getAllEnvelopes(TEST_USER_ID).catch(err => {
+          console.error('❌ Failed to fetch envelopes for reset:', err);
+          return [];
+        }),
+        TransactionService.getAllTransactions(TEST_USER_ID).catch(err => {
+          console.error('❌ Failed to fetch transactions for reset:', err);
+          return [];
+        }),
+        DistributionTemplateService.getAllDistributionTemplates(TEST_USER_ID).catch(err => {
+          console.error('❌ Failed to fetch templates for reset:', err);
+          return [];
+        }),
+        AppSettingsService.getAppSettings(TEST_USER_ID).catch(err => {
+          console.error('❌ Failed to fetch settings for reset:', err);
+          return null;
+        })
+      ]);
+
+      console.log(`📊 Found in Firebase: ${allEnvelopes.length} envelopes, ${allTransactions.length} transactions, ${allTemplates.length} templates`);
 
       // Delete all envelopes
-      for (const envelope of state.envelopes) {
+      let deletedEnvelopes = 0;
+      for (const envelope of allEnvelopes) {
         if (envelope.id) {
           try {
             await EnvelopeService.deleteEnvelope(TEST_USER_ID, envelope.id);
-            console.log(`✅ Deleted envelope: ${envelope.name}`);
+            deletedEnvelopes++;
+            console.log(`✅ Deleted envelope: ${envelope.name || envelope.id}`);
           } catch (error) {
-            console.error(`❌ Failed to delete envelope ${envelope.name}:`, error);
+            console.error(`❌ Failed to delete envelope ${envelope.id}:`, error);
           }
         }
       }
 
       // Delete all transactions
-      for (const transaction of state.transactions) {
+      let deletedTransactions = 0;
+      for (const transaction of allTransactions) {
         if (transaction.id) {
           try {
             await TransactionService.deleteTransaction(TEST_USER_ID, transaction.id);
-            console.log(`✅ Deleted transaction: ${transaction.description}`);
+            deletedTransactions++;
+            console.log(`✅ Deleted transaction: ${transaction.id}`);
           } catch (error) {
-            console.error(`❌ Failed to delete transaction ${transaction.description}:`, error);
+            console.error(`❌ Failed to delete transaction ${transaction.id}:`, error);
           }
         }
       }
 
       // Delete all templates
-      for (const template of state.distributionTemplates) {
+      let deletedTemplates = 0;
+      for (const template of allTemplates) {
         if (template.id) {
           try {
             await DistributionTemplateService.deleteDistributionTemplate(TEST_USER_ID, template.id);
-            console.log(`✅ Deleted template: ${template.name}`);
+            deletedTemplates++;
+            console.log(`✅ Deleted template: ${template.name || template.id}`);
           } catch (error) {
-            console.error(`❌ Failed to delete template ${template.name}:`, error);
+            console.error(`❌ Failed to delete template ${template.id}:`, error);
           }
         }
       }
 
-      // Delete app settings
-      if (state.appSettings?.id) {
+      // Delete app settings if they exist
+      if (allSettings?.id) {
         try {
-          await AppSettingsService.deleteAppSettings(TEST_USER_ID, state.appSettings.id);
+          await AppSettingsService.deleteAppSettings(TEST_USER_ID, allSettings.id);
           console.log(`✅ Deleted app settings`);
         } catch (error) {
           console.error(`❌ Failed to delete app settings:`, error);
         }
       }
 
-      console.log('✅ Data reset complete - all Firebase data deleted');
+      console.log(`✅ Firebase reset complete: Deleted ${deletedEnvelopes} envelopes, ${deletedTransactions} transactions, ${deletedTemplates} templates`);
+      
+      // Clear the reset pending flag
+      set({ 
+        resetPending: false,
+        isLoading: false,
+        pendingSync: false
+      });
 
     } catch (error) {
-      console.error('❌ Error during data reset:', error);
-      // Continue with local state reset even if Firebase deletion fails
+      console.error('❌ Error during Firebase reset:', error);
+      // Keep resetPending true so it retries later
+      set({ 
+        isLoading: false,
+        pendingSync: true
+      });
+      throw error;
     }
+  },
 
-    // Clear local state regardless of Firebase deletion success
+  /**
+   * ACTION: Reset all data - Offline-first pattern
+   * 1. Clear local state immediately (optimistic update)
+   * 2. Set resetPending flag
+   * 3. If online, perform Firebase reset immediately
+   * 4. If offline, Firebase reset will happen when coming back online (via syncData)
+   */
+  resetData: async () => {
+    console.log('🗑️ Starting complete data reset (offline-first)...');
+    
+    // STEP 1: Clear local state immediately (offline-first pattern)
     set({
       envelopes: [],
       transactions: [],
       distributionTemplates: [],
       appSettings: null,
       error: null,
-      pendingSync: false
+      resetPending: true, // Mark reset as pending for sync
+      isLoading: true
     });
+    
+    console.log('✅ Local state cleared immediately');
 
-    console.log('✅ Local state cleared');
+    // STEP 2: If online, perform Firebase reset immediately
+    const state = get();
+    if (state.isOnline) {
+      console.log('🌐 Online - performing Firebase reset immediately...');
+      try {
+        await get().performFirebaseReset();
+        console.log('✅ Firebase reset completed immediately');
+      } catch (error) {
+        console.error('❌ Firebase reset failed, will retry on next sync:', error);
+        // Keep resetPending true so it retries when sync happens
+        set({ 
+          isLoading: false,
+          pendingSync: true
+        });
+      }
+    } else {
+      console.log('📴 Offline - Firebase reset will be performed when connection is restored');
+      set({ 
+        isLoading: false,
+        pendingSync: true // Mark for sync when back online
+      });
+    }
   },
 
   /**
@@ -1135,9 +1308,9 @@ if (typeof window !== 'undefined') {
     // When coming back online, check connectivity
     await useEnvelopeStore.getState().updateOnlineStatus();
 
-    // If we're actually online and have pending sync, auto-sync
+    // If we're actually online and have pending sync or reset, auto-sync
     const state = useEnvelopeStore.getState();
-    if (state.isOnline && state.pendingSync) {
+    if (state.isOnline && (state.pendingSync || state.resetPending)) {
       console.log('🔄 Auto-syncing pending operations...');
       state.syncData();
     }

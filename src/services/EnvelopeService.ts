@@ -43,12 +43,34 @@ import {
 
     // 2. GET ALL (For store.fetchData)
     getAllEnvelopes: async (userId: string): Promise<Envelope[]> => {
-      const q = query(getCollectionRef(userId), orderBy('name', 'asc'));
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Envelope[];
+      try {
+        console.log('📡 EnvelopeService.getAllEnvelopes called for user:', userId);
+        
+        // Fetch ALL documents without ordering first (ensures we get all envelopes)
+        // Then sort in memory to handle missing orderIndex fields gracefully
+        const collectionRef = getCollectionRef(userId);
+        const snapshot = await getDocs(collectionRef);
+        
+        const envelopes = snapshot.docs.map((doc, index) => ({
+          id: doc.id,
+          ...doc.data(),
+          // Ensure orderIndex is always set (default to index if missing)
+          orderIndex: doc.data().orderIndex ?? index
+        })) as Envelope[];
+        
+        // Sort by orderIndex in memory (consistent with subscribeToEnvelopes)
+        const sortedEnvelopes = envelopes.sort((a, b) => {
+          const aIndex = a.orderIndex ?? 0;
+          const bIndex = b.orderIndex ?? 0;
+          return aIndex - bIndex;
+        });
+        
+        console.log('✅ Fetched envelopes:', sortedEnvelopes.length);
+        return sortedEnvelopes;
+      } catch (error) {
+        console.error('❌ EnvelopeService.getAllEnvelopes failed:', error);
+        return [];
+      }
     },
 
     // 3. CREATE (For store.createEnvelope)
@@ -77,6 +99,9 @@ import {
 
     // 4. SAVE (Create/Update with merge)
     saveEnvelope: async (userId: string, envelope: Envelope) => {
+      if (!envelope.id) {
+        throw new Error('Envelope ID is required for save operation');
+      }
       const docRef = doc(db, 'users', userId, 'envelopes', envelope.id);
       return await setDoc(docRef, envelope, { merge: true });
     },

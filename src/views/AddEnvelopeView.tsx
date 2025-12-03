@@ -18,10 +18,17 @@ export const AddEnvelopeView: React.FC = () => {
     const balanceValue = parseFloat(initialBalance);
     const finalBalance = isNaN(balanceValue) ? 0 : balanceValue;
 
+    // Get next orderIndex (after last envelope)
+    const envelopes = useEnvelopeStore.getState().envelopes;
+    // Find the highest orderIndex and add 1
+    const maxOrderIndex = envelopes.length > 0 ? Math.max(...envelopes.map(e => e.orderIndex ?? 0)) : -1;
+    const nextOrderIndex = maxOrderIndex + 1;
+
     createEnvelope({
       name,
       budget: finalBalance,
-      category: 'General'
+      category: 'General',
+      orderIndex: nextOrderIndex
     });
     navigate('/');
   };
