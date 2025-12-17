@@ -6,7 +6,7 @@ import { UserMenu } from '../components/ui/UserMenu';
 import { useNavigate } from 'react-router-dom';
 
 export const EnvelopeListView: React.FC = () => {
-  const { envelopes, transactions, fetchData, isOnline, pendingSync, syncData, isLoading, getEnvelopeBalance } = useEnvelopeStore();
+  const { envelopes, transactions, fetchData, isOnline, pendingSync, syncData, isLoading, getEnvelopeBalance, testingConnectivity } = useEnvelopeStore();
   const [isDistributeOpen, setIsDistributeOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -70,7 +70,12 @@ export const EnvelopeListView: React.FC = () => {
               <div className="flex items-center gap-1 text-gray-500">
                 <WifiOff size={16} />
                 <span className="text-sm font-medium">
-                  {isLoading ? 'Offline (Saving...)' : 'Offline'}
+                  {testingConnectivity
+                    ? 'Testing Connection...'
+                    : isLoading
+                      ? 'Offline (Saving...)'
+                      : 'Offline'
+                  }
                 </span>
               </div>
             )}

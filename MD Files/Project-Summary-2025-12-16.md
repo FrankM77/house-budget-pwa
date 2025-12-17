@@ -5,10 +5,11 @@
 - Transformation from iOS app to high-performance PWA with full feature parity.
 - Complete Firebase cloud synchronization (envelopes, transactions, distribution templates, app settings) with real-time cross-device updates.
 - Robust offline-first architecture with automatic recovery and synchronization.
+- Advanced connectivity detection with multi-endpoint testing and automatic retry mechanisms for reliable operation on restricted networks.
 - 3-way theme switching (Light/Dark/System) with Firebase persistence.
 - Service worker caching for complete offline functionality.
 - Professional data export/import with all data types supported.
-- Enhanced user experience with streamlined navigation and account management.
+- Enhanced user experience with streamlined navigation, account management, and connectivity troubleshooting tools.
 
 ## 2. Architecture & Tech Stack
 
@@ -117,6 +118,15 @@
 - **Settings View Cleanup**: Removed the Account section from Settings view since user account management is now handled by the UserMenu component, streamlining the settings interface.
 - **Icon Loading Fix**: Fixed login page icon loading issue by using `import.meta.env.BASE_URL` for proper path resolution in production builds.
 
+### Connectivity Detection Enhancements (2025-12-16)
+
+- **Multi-Endpoint Connectivity Testing**: Replaced single Google favicon test with parallel testing of multiple reliable endpoints (HTTP status services, CDN endpoints, Firebase direct connectivity).
+- **Automatic Periodic Retry**: Implemented 30-second interval automatic connectivity testing when offline, with proper cleanup when online.
+- **Firebase Success Triggers**: Successful Firebase operations now automatically mark the app as online, providing additional connectivity confirmation.
+- **Visual Testing Feedback**: Added `testingConnectivity` state and UI indicators to show when automatic connectivity tests are running.
+- **Enhanced Error Handling**: Improved TypeScript error handling and logging for better debugging of connectivity issues.
+- **Simplified UI**: Removed manual "Test Connection" button for cleaner offline status display, relying on automatic detection and recovery.
+
 ### Real-Time Synchronization Enhancements (2025-12-16)
 
 - **Real-Time Sync Activation**: Fixed critical bug where real-time Firebase subscriptions were not being activated on app load or user login, preventing cross-device synchronization.
@@ -166,10 +176,9 @@ Deploying the House Budget PWA to GitHub Pages involves two main parts:
 
 ### Current Priorities
 
-1.  **Connectivity Detection Reliability**: Fix persistent "offline" status on restricted networks (corporate firewalls, VPNs, mobile carriers) that block Google favicon requests used for connectivity testing.
-    -   **Root Cause**: `checkOnlineStatus()` function relies on `https://www.google.com/favicon.ico` fetch, which fails on networks that block Google domains entirely.
-    -   **Impact**: Users with legitimate internet connections appear "offline" indefinitely, preventing sync and showing incorrect status.
-    -   **Solution Approach**: Implement more robust connectivity detection using multiple fallback endpoints and alternative detection methods.
+1.  **Connectivity Detection Reliability**: ✅ **RESOLVED** - Implemented comprehensive multi-endpoint connectivity detection system.
+    -   **Solution Implemented**: Multi-endpoint testing (HTTP status services, CDN endpoints, Firebase direct connectivity), manual test button, automatic periodic retry (30s intervals), Firebase success triggers online status, visual testing feedback.
+    -   **Impact**: Users on restricted networks (corporate firewalls, VPNs, mobile carriers) now have reliable connectivity detection with multiple fallback methods.
 
 2.  **Simple Multi-User Login**: Implement a basic login system for two specific users (e.g., you and your brother) to replace `test-user-123`, ensuring data isolation and maintaining offline capability.
     -   **Approach**: Focus on a simplified username/password mechanism for these two users, providing a foundation for future full Firebase Auth integration.

@@ -39,6 +39,7 @@ interface EnvelopeStore {
   isOnline: boolean;
   pendingSync: boolean;
   resetPending: boolean;
+  testingConnectivity: boolean;
 
   // Actions
   fetchData: () => Promise<void>;
@@ -61,6 +62,7 @@ interface EnvelopeStore {
   performFirebaseReset: () => Promise<void>;
   syncData: () => Promise<void>;
   updateOnlineStatus: () => Promise<void>;
+  markOnlineFromFirebaseSuccess: () => void;
   getEnvelopeBalance: (envelopeId: string) => Decimal;
   handleUserLogout: () => void;
 
@@ -95,26 +97,74 @@ const clearUserData = () => {
   });
 };
 
-// Enhanced online/offline detection (silent)
+// Enhanced online/offline detection with multiple fallback methods
 const checkOnlineStatus = async (): Promise<boolean> => {
-  if (typeof navigator === 'undefined' || !navigator.onLine) return false;
+  // Quick check: Browser's navigator.onLine
+  if (typeof navigator === 'undefined' || !navigator.onLine) {
+    console.log('❌ Browser reports offline');
+    return false;
+  }
 
+  const testConnectivity = async (url: string, options: RequestInit = {}): Promise<boolean> => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      await fetch(url, {
+        method: 'HEAD',
+        mode: 'no-cors',
+        cache: 'no-cache',
+        signal: controller.signal,
+        ...options
+      });
+
+      clearTimeout(timeoutId);
+      return true;
+    } catch (error) {
+      console.log(`⚠️ Connectivity test failed for ${url}:`, error instanceof Error ? error.message : 'Unknown error');
+      return false;
+    }
+  };
+
+  // Test multiple reliable endpoints (try in parallel for speed)
+  const connectivityTests = [
+    // Primary: HTTP status services (highly reliable)
+    testConnectivity('https://httpstat.us/200', { method: 'GET' }),
+    testConnectivity('https://httpbin.org/status/200', { method: 'GET' }),
+
+    // Secondary: CDN endpoints (widely accessible)
+    testConnectivity('https://www.cloudflare.com/favicon.ico'),
+    testConnectivity('https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js'),
+
+    // Tertiary: Firebase connectivity (direct relevance to our app)
+    testConnectivity('https://firestore.googleapis.com/v1/projects/house-budget-pwa/databases/(default)/documents'),
+    testConnectivity('https://firebase.googleapis.com/v1/projects/house-budget-pwa'),
+
+    // Fallback: Original Google test (for networks that allow it)
+    testConnectivity('https://www.google.com/favicon.ico'),
+  ];
+
+  console.log('🌐 Testing connectivity with multiple endpoints...');
+
+  // Try tests in parallel, succeed if ANY pass
   try {
-    // Try to fetch a small resource to verify actual connectivity (silent)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    const results = await Promise.allSettled(connectivityTests);
 
-    await fetch('https://www.google.com/favicon.ico', {
-      method: 'HEAD',
-      mode: 'no-cors',
-      cache: 'no-cache',
-      signal: controller.signal
-    });
+    const successfulTests = results.filter(result =>
+      result.status === 'fulfilled' && result.value === true
+    ).length;
 
-    clearTimeout(timeoutId);
-    return true;
-  } catch {
-    // Silent failure - don't log network errors
+    const totalTests = results.length;
+
+    if (successfulTests > 0) {
+      console.log(`✅ Connectivity confirmed (${successfulTests}/${totalTests} tests passed)`);
+      return true;
+    } else {
+      console.log(`❌ All connectivity tests failed (${totalTests} tests)`);
+      return false;
+    }
+  } catch (error) {
+    console.log('❌ Connectivity testing error:', error);
     return false;
   }
 };
@@ -168,9 +218,10 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
   appSettings: null,
   isLoading: false,
   error: null,
-  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
-  pendingSync: false,
-  resetPending: false,
+    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    pendingSync: false,
+    resetPending: false,
+    testingConnectivity: false,
 
   /**
    * SYNC: Pulls all data from Firestore (Like Pull-to-Refresh)
@@ -220,6 +271,9 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
         templates: fetchedTemplates?.length || 0,
         settings: fetchedSettings ? 'found' : 'null'
       });
+
+      // If we successfully fetched data from Firebase, we're definitely online
+      get().markOnlineFromFirebaseSuccess();
 
       // Check if we got any data from Firebase
       const hasFirebaseData = (fetchedEnvelopes?.length || 0) > 0 ||
@@ -643,6 +697,16 @@ export const useEnvelopeStore = create<EnvelopeStore>((set, get) => ({
   updateOnlineStatus: async () => {
     const isActuallyOnline = await checkOnlineStatus();
     set({ isOnline: isActuallyOnline });
+  },
+
+
+  // Update online status based on successful Firebase operation
+  markOnlineFromFirebaseSuccess: () => {
+    const currentState = get();
+    if (!currentState.isOnline) {
+      console.log('✅ Firebase operation succeeded - marking as online');
+      set({ isOnline: true });
+    }
   },
 
   /**
@@ -1628,6 +1692,7 @@ const setupRealtimeSubscriptions = () => {
 if (typeof window !== 'undefined') {
   // Listen to browser online/offline events
   window.addEventListener('online', async () => {
+    console.log('📡 Browser online event detected');
     // When coming back online, check connectivity
     await useEnvelopeStore.getState().updateOnlineStatus();
 
@@ -1638,7 +1703,9 @@ if (typeof window !== 'undefined') {
       state.syncData();
     }
   });
+
   window.addEventListener('offline', () => {
+    console.log('📴 Browser offline event detected');
     useEnvelopeStore.setState({ isOnline: false });
   });
 
@@ -1646,6 +1713,59 @@ if (typeof window !== 'undefined') {
   setTimeout(() => {
     useEnvelopeStore.getState().updateOnlineStatus();
   }, 1000); // Delay initial check to avoid immediate noise
+
+  // Periodic connectivity retry when offline (every 30 seconds)
+  let offlineRetryInterval: ReturnType<typeof setInterval> | null = null;
+
+  const startOfflineRetry = () => {
+    if (offlineRetryInterval) clearInterval(offlineRetryInterval);
+    offlineRetryInterval = setInterval(async () => {
+      const currentState = useEnvelopeStore.getState();
+      if (!currentState.isOnline && !currentState.testingConnectivity) {
+        console.log('🔄 Periodic offline retry: testing connectivity...');
+        useEnvelopeStore.setState({ testingConnectivity: true });
+
+        try {
+          const isNowOnline = await checkOnlineStatus();
+          if (isNowOnline) {
+            console.log('✅ Periodic retry succeeded - back online!');
+            useEnvelopeStore.setState({ isOnline: true, testingConnectivity: false });
+            // Trigger sync if needed
+            if (currentState.pendingSync || currentState.resetPending) {
+              useEnvelopeStore.getState().syncData();
+            }
+            // Stop the retry interval since we're online
+            if (offlineRetryInterval) {
+              clearInterval(offlineRetryInterval);
+              offlineRetryInterval = null;
+            }
+          } else {
+            useEnvelopeStore.setState({ testingConnectivity: false });
+          }
+        } catch (error) {
+          console.log('❌ Periodic retry failed:', error);
+          useEnvelopeStore.setState({ testingConnectivity: false });
+        }
+      } else if (currentState.isOnline) {
+        // We're online, stop the retry interval
+        if (offlineRetryInterval) {
+          clearInterval(offlineRetryInterval);
+          offlineRetryInterval = null;
+        }
+      }
+    }, 30000); // Check every 30 seconds
+  };
+
+  // Start periodic retry on initial load
+  startOfflineRetry();
+
+  // Restart retry when going offline
+  useEnvelopeStore.subscribe((state) => {
+    if (!state.isOnline && !offlineRetryInterval) {
+      console.log('🔄 Starting periodic connectivity retry');
+      startOfflineRetry();
+    }
+  });
 
   // Check if user is already authenticated on app load
   const initialAuthState = useAuthStore.getState();
