@@ -1,4 +1,4 @@
-# House Budget PWA: Project Summary - 2025-12-16
+# House Budget PWA: Project Summary - 2025-12-18
 
 ## 1. Executive Summary
 
@@ -80,10 +80,12 @@
 - CSV Export: Data export functionality.
 - Native UI: iOS-style interface adapted to web standards.
 
-### Phase 2: Firebase Cloud Synchronization
+### Phase 2: Firebase Cloud Synchronization & Authentication
 
 - **Complete Engine Swap**: Migrated from local storage to Firebase-backed Zustand store.
 - **Service Layer**: Dedicated Firebase services for all data types (`EnvelopeService`, `TransactionService`, `DistributionTemplateService`, `AppSettingsService`).
+- **User Authentication**: Implemented Firebase Authentication with email/password, including login, registration, and password reset flows.
+- **Session Persistence**: Configured Firebase to maintain login state across page refreshes with secure session management.
 - **Dynamic Balance Calculation**: Real-time balances computed from transaction history.
 - **Network Status Tracking**: Online/offline indicators and connectivity awareness.
 - **Automatic Sync**: Firestore's offline persistence handles all CRUD operations.
@@ -111,6 +113,24 @@
 - **Offline Template Loading**: Distribution templates created offline now appear immediately in the load template list without requiring online sync, and no duplicates appear when transitioning online.
 - **Transaction Editing Offline**: Transaction editing now works seamlessly online and offline with proper Firebase sync, immediate UI updates, and no data loss during network transitions.
 - **Global FAB Navigation Fix**: Fixed transaction creation flow so clicking "Done" after global FAB transactions navigates to home screen instead of envelope selection screen, matching the behavior of envelope detail transactions.
+
+### Authentication Implementation (2025-12-17)
+
+- **Login/Registration Flow**: Implemented secure email/password authentication with form validation and error handling.
+- **Password Reset**: Added self-service password reset functionality with email verification.
+- **User Feedback**: Clear error messages and loading states during authentication processes.
+- **Session Management**: Automatic session persistence across page refreshes and browser sessions.
+
+### Offline Authentication Grace Period (2025-12-18)
+
+- **7-Day Offline Access**: Implemented persistent authentication state allowing users to remain logged in for up to 7 days when offline, perfect for travel scenarios (flights, cruises, etc.).
+- **Grace Period Logic**: Added `lastAuthTime` and `offlineGracePeriod` fields to auth state with automatic time-based expiration checks.
+- **Offline-First Security**: Maintains security by requiring recent authentication (within 7 days) while allowing offline access within the grace period.
+- **Automatic Expiration**: Users are automatically logged out and redirected to login screen when the grace period expires.
+- **Seamless UX**: No user interaction required during grace period - users stay logged in transparently when offline.
+- **Firebase Integration**: Works with Firebase Auth's session management while adding offline persistence layer.
+- **Testing Framework**: Implemented comprehensive testing mechanism with debug logging to verify grace period expiration behavior.
+- **Production Ready**: Clean implementation with no testing artifacts in production code.
 
 ### UI/UX Improvements (2025-12-16)
 
@@ -184,7 +204,9 @@ Deploying the House Budget PWA to GitHub Pages involves two main parts:
 2.  **Simple Multi-User Login**: ✅ **RESOLVED** - Implemented complete multi-user authentication with data isolation.
     -   **Solution Implemented**: Zustand auth store with predefined users (Frank/Brother), persistent login state, dynamic user ID injection across all Firebase services, complete data isolation between users.
     -   **Impact**: Users can login with separate accounts, data is properly isolated in Firebase collections, offline capability maintained.
-3.  **User Authentication**: Integrate full Firebase Auth for broader multi-user support and enhanced security features.
+3.  **Offline Authentication**: ✅ **RESOLVED** - Implemented 7-day offline authentication grace period.
+    -   **Solution Implemented**: Added `lastAuthTime` and `offlineGracePeriod` to auth state, persistent local storage, automatic grace period expiration, seamless offline access within 7 days of last authentication.
+    -   **Impact**: Users can now access their budget data offline for up to 7 days (perfect for flights/travel), with automatic secure logout after grace period expires.
 4.  **Performance Testing**: Conduct load testing with large transaction datasets to identify and address any performance bottlenecks.
 5.  **Error Boundaries**: Implement comprehensive error handling and error boundaries throughout the application for improved production readiness.
 
