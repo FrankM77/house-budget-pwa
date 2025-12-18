@@ -12,6 +12,8 @@ interface AuthState {
   isLoading: boolean;
   isInitialized: boolean;
   isInitializing?: boolean; // For internal use during initialization
+  lastAuthTime: number | null; // Track last successful auth time for offline grace period
+  offlineGracePeriod: number; // Grace period in milliseconds (7 days)
 }
 
 interface AuthActions {
@@ -42,6 +44,8 @@ export const useAuthStore = create<AuthStore>()(
       isLoading: false,
       isInitialized: false,
       isInitializing: true,
+      lastAuthTime: null, // Track last successful auth time
+      offlineGracePeriod: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
 
       login: async (email: string, password: string): Promise<boolean> => {
         set({ isLoading: true, loginError: null });
@@ -55,7 +59,8 @@ export const useAuthStore = create<AuthStore>()(
             currentUser: user,
             isAuthenticated: true,
             isLoading: false,
-            loginError: null
+            loginError: null,
+            lastAuthTime: Date.now() // Record successful auth time
           });
           console.log(`✅ User logged in: ${user.email}`);
           return true;
@@ -107,7 +112,8 @@ export const useAuthStore = create<AuthStore>()(
             currentUser: user,
             isAuthenticated: true,
             isLoading: false,
-            loginError: null
+            loginError: null,
+            lastAuthTime: Date.now() // Record successful auth time
           });
           console.log(`✅ User registered and logged in: ${user.email}`);
           return true;
@@ -189,18 +195,38 @@ export const useAuthStore = create<AuthStore>()(
         set({ isInitialized: false });
 
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+          const now = Date.now();
+          const currentState = useAuthStore.getState(); // Use getState() instead of get()
+          
           const user = firebaseUser ? firebaseUserToUser(firebaseUser) : null;
 
+          // Check if we're within the offline grace period
+          const isWithinGracePeriod = currentState.lastAuthTime &&
+            (now - currentState.lastAuthTime) < currentState.offlineGracePeriod;
+
+          // Allow offline access if within grace period and offline
+          const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+          const shouldGrantOfflineAccess = isOffline && currentState.isAuthenticated &&
+            isWithinGracePeriod && !user; // No current Firebase user but we have persisted state
+
+
+          // Effective authentication state
+          const effectiveAuthenticated = !!user || !!shouldGrantOfflineAccess;
+          const effectiveUser = user || (shouldGrantOfflineAccess ? currentState.currentUser : null);
+
           set({
-            currentUser: user,
-            isAuthenticated: !!user,
+            currentUser: effectiveUser,
+            isAuthenticated: effectiveAuthenticated,
             isInitialized: true,
             isLoading: false,
-            loginError: null
+            loginError: null,
+            lastAuthTime: user ? now : currentState.lastAuthTime // Update only on successful Firebase auth
           });
 
-          if (user) {
-            console.log(`🔄 Auth state: User is signed in (${user.email})`);
+          if (effectiveUser) {
+            console.log(`🔄 Auth state: User is signed in (${effectiveUser.email})`,
+              shouldGrantOfflineAccess ? '(offline grace period)' : '');
           } else {
             console.log('🔄 Auth state: User is signed out');
           }
@@ -213,7 +239,10 @@ export const useAuthStore = create<AuthStore>()(
       name: 'auth-storage',
       partialize: (state) => ({
         // Only persist basic auth state, Firebase handles the actual user session
-        isAuthenticated: state.isAuthenticated
+        isAuthenticated: state.isAuthenticated,
+        currentUser: state.currentUser, // Also persist user data for offline access
+        lastAuthTime: state.lastAuthTime, // Persist auth timestamp for grace period
+        offlineGracePeriod: state.offlineGracePeriod // Persist grace period setting
       })
     }
   )
