@@ -38,13 +38,8 @@ export const createTemplateSlice = ({ set, get, getCurrentUserId, isNetworkError
           const savedTemplate = await Promise.race([firebasePromise, timeoutPromise]) as DistributionTemplate;
           console.log('✅ Firebase template save succeeded (online mode):', savedTemplate);
 
-          set((state: any) => {
-            const newTemplates = [...state.distributionTemplates, savedTemplate];
-            console.log('🔄 Updating store - old templates:', state.distributionTemplates.length, 'new templates:', newTemplates.length);
-            return {
-              distributionTemplates: newTemplates
-            };
-          });
+          // Don't update local state - real-time subscription handles it
+          console.log('✅ Template saved to Firebase - real-time subscription will update local state');
 
           console.log('✅ Template saved to Firebase:', savedTemplate);
           console.log('📊 Store now has templates:', get().distributionTemplates.length);

@@ -30,16 +30,11 @@ export const checkOnlineStatus = async (): Promise<boolean> => {
   // Test multiple reliable endpoints (try in parallel for speed)
   const connectivityTests = [
     // Primary: HTTP status services (highly reliable)
-    testConnectivity('https://httpstat.us/200', { method: 'GET' }),
     testConnectivity('https://httpbin.org/status/200', { method: 'GET' }),
 
     // Secondary: CDN endpoints (widely accessible)
     testConnectivity('https://www.cloudflare.com/favicon.ico'),
     testConnectivity('https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js'),
-
-    // Tertiary: Firebase connectivity (direct relevance to our app)
-    testConnectivity('https://firestore.googleapis.com/v1/projects/house-budget-pwa/databases/(default)/documents'),
-    testConnectivity('https://firebase.googleapis.com/v1/projects/house-budget-pwa'),
 
     // Fallback: Original Google test (for networks that allow it)
     testConnectivity('https://www.google.com/favicon.ico'),

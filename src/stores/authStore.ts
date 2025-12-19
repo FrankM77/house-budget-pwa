@@ -192,6 +192,13 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       initializeAuth: () => {
+        // Check if already initialized to prevent resetting during Firebase reconnects
+        const currentState = useAuthStore.getState();
+        if (currentState.isInitialized) {
+          // Already initialized, return empty unsubscribe function
+          return () => {};
+        }
+
         set({ isInitialized: false });
 
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {

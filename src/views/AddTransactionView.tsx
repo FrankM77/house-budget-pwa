@@ -5,11 +5,17 @@ import { useEnvelopeStore } from '../stores/envelopeStore';
 
 export const AddTransactionView: React.FC = () => {
   const navigate = useNavigate();
-  const { envelopes } = useEnvelopeStore();
+  const { envelopes, getEnvelopeBalance } = useEnvelopeStore();
 
-  // Sort envelopes by name (since orderIndex doesn't exist in new structure)
-  const sortedEnvelopes = [...envelopes]
-    .sort((a, b) => a.name.localeCompare(b.name));
+  // Sort envelopes by orderIndex (creation order) with name as fallback
+  const sortedEnvelopes = [...envelopes].sort((a, b) => {
+    const aOrder = a.orderIndex ?? 0;
+    const bOrder = b.orderIndex ?? 0;
+    if (aOrder !== bOrder) {
+      return aOrder - bOrder;
+    }
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -54,7 +60,7 @@ export const AddTransactionView: React.FC = () => {
                         {env.name}
                       </span>
                       <span className="text-sm text-gray-500 dark:text-zinc-400">
-                        Balance calculation not available here
+                        Balance: ${getEnvelopeBalance(env.id!).toNumber().toFixed(2)}
                       </span>
                     </div>
 

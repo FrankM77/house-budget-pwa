@@ -17,10 +17,16 @@ export const EnvelopeListView: React.FC = () => {
     }
   }, []); // Empty dependency array - only run once on mount
 
-  // Sort envelopes by name (since orderIndex doesn't exist in new structure)
-  const sortedEnvelopes = [...envelopes].sort(
-    (a, b) => a.name.localeCompare(b.name)
-  );
+  // Envelopes should already be sorted by orderIndex from the store/service
+  // If not, sort by orderIndex first, then by name as fallback
+  const sortedEnvelopes = [...envelopes].sort((a, b) => {
+    const aOrder = a.orderIndex ?? 0;
+    const bOrder = b.orderIndex ?? 0;
+    if (aOrder !== bOrder) {
+      return aOrder - bOrder;
+    }
+    return a.name.localeCompare(b.name);
+  });
 
   // Calculate Total Balance dynamically from computed envelope balances
   console.log('🔄 EnvelopeListView render - calculating balances');
