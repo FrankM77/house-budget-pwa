@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Download, Upload, Trash2, CheckCircle, ChevronRight, FileText, RefreshCw, Loader, X, AlertTriangle } from 'lucide-react';
 import { useEnvelopeStore } from '../stores/envelopeStore';
 import { useAuthStore } from '../stores/authStore';
+import packageJson from '../../package.json';
 
 export const SettingsView: React.FC = () => {
   const navigate = useNavigate();
@@ -492,7 +493,7 @@ export const SettingsView: React.FC = () => {
         </section>
 
         <div className="text-center pt-4 pb-12 text-xs text-gray-400 dark:text-zinc-500 font-medium">
-          House Budget PWA • App Version 2.0.1
+          House Budget PWA • App Version {packageJson.version}
         </div>
       </div>
 
