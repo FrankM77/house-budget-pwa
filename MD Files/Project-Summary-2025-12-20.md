@@ -401,9 +401,9 @@ Deploying the House Budget PWA to GitHub Pages involves two main parts:
     -   **Solution Implemented**: Dynamic import from package.json, automated version updates, semantic versioning workflow.
     -   **Impact**: Professional version management with automatic UI updates.
 
-9.  **Password Strength Validation**: ✅ **COMPLETED** - Added client-side password strength validation with visual feedback.
-    -   **Solution Implemented**: Real-time password validation hook, visual strength indicator, requirements checklist, accessibility support.
-    -   **Impact**: Users get immediate feedback on password strength, reducing registration failures and improving security.
+9.  **Password Strength Validation**: 🔄 **PLANNED** - Add client-side password strength validation with visual feedback.
+    -   **Planned Implementation**: Real-time password validation hook, visual strength indicator, requirements checklist, accessibility support.
+    -   **Expected Impact**: Users get immediate feedback on password strength, reducing registration failures and improving security.
 
 5.  **Performance Testing**: Conduct load testing with large transaction datasets to identify and address any performance bottlenecks.
 
@@ -422,6 +422,7 @@ Deploying the House Budget PWA to GitHub Pages involves two main parts:
 With the core refactor complete, focus can shift to:
 1. **Performance optimization** (bundle splitting, lazy loading)
 2. **PWA enhancements** (install prompts, push notifications)
-3. **Feature development** (charts, advanced reporting)
-4. **Testing infrastructure** (unit tests, E2E tests)
-5. **Code quality** (ESLint, Prettier, error boundaries)
+3. **UX improvements** (password strength validation, enhanced forms)
+4. **Feature development** (charts, advanced reporting)
+5. **Testing infrastructure** (unit tests, E2E tests)
+6. **Code quality** (ESLint, Prettier, error boundaries)
