@@ -82,6 +82,51 @@
         └── TransactionHistoryView.tsx
 ```
 
+## Version Management & Release Process
+
+### Semantic Versioning Workflow
+The project follows semantic versioning (MAJOR.MINOR.PATCH) with automated version management:
+
+| Change Type | Command | Version Bump | Example | Description |
+|-------------|---------|--------------|---------|-------------|
+| **Bug fixes** | `npm version patch` | 1.0.0 → 1.0.1 | Fixed login error feedback | Backwards compatible bug fixes |
+| **New features** | `npm version minor` | 1.0.0 → 1.1.0 | Added email verification | Backwards compatible new features |
+| **Breaking changes** | `npm version major` | 1.0.0 → 2.0.0 | Major API changes | Breaking changes requiring migration |
+
+### Automated Version Updates
+- **package.json**: Automatically updated via `npm version` commands
+- **UI Display**: Dynamically imports version from package.json (no manual updates needed)
+- **Git Integration**: Creates commits and tags automatically
+- **Cross-platform**: Works consistently across development and production
+
+### Release Workflow
+```bash
+# 1. Develop and test changes
+git add .
+git commit -m "feat: add new email verification system"
+
+# 2. Bump version based on change type
+npm version minor    # 1.0.0 → 1.1.0
+
+# 3. Push changes and tags
+git push origin main
+git push origin --tags
+
+# 4. UI automatically reflects new version
+```
+
+### Version Display
+- **Settings Page**: Shows "App Version X.Y.Z" (dynamically from package.json)
+- **Real-time Updates**: Version changes appear immediately after deployment
+- **Consistency**: Single source of truth for version information
+
+### Benefits
+- **Professional Releases**: Industry-standard semantic versioning
+- **Automated Workflow**: No manual version file updates
+- **Traceability**: Git tags provide clear release history
+- **User Communication**: Version numbers communicate change impact
+- **Dependency Management**: Compatible with npm ecosystem tools
+
 ## 3. Recent Major Achievement: Zustand Store Refactor (2025-12-19)
 
 ### ✅ **REFACTOR COMPLETE: 100% FINISHED!** 🎉
