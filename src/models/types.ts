@@ -17,6 +17,7 @@ export interface Transaction {
   type: TransactionType;
   transferId?: string; // Links two sides of a transfer
   userId?: string;
+  month?: string; // Format: "2025-01" for monthly budgeting
 }
 
 export interface Envelope {
@@ -43,4 +44,37 @@ export interface AppSettings {
   userId?: string;
   theme: 'light' | 'dark' | 'system';
   // Additional settings can be added here as needed
+}
+
+// Zero-Based Budgeting Types
+export interface MonthlyBudget {
+  id: string;
+  userId: string;
+  month: string; // Format: "2025-01"
+  totalIncome: number;
+  availableToBudget: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IncomeSource {
+  id: string;
+  userId: string;
+  month: string; // Format: "2025-01"
+  name: string;
+  amount: number;
+  frequency: 'monthly' | 'weekly' | 'biweekly';
+  category?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnvelopeAllocation {
+  id: string;
+  userId: string;
+  envelopeId: string;
+  month: string; // Format: "2025-01"
+  budgetedAmount: number;
+  createdAt: string;
+  updatedAt: string;
 }

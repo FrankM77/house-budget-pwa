@@ -1,7 +1,7 @@
 # Personal Budget PWA - Zero-Based Budgeting Vision
 
 ## Overview
-Transform the Personal Budget PWA into a comprehensive **zero-based budgeting** application where every dollar of income must be allocated to specific envelopes until the budget is balanced.
+Transform the Personal Budget PWA into a comprehensive **zero-based budgeting** application following the EveryDollar model, where every dollar of income is assigned a job through a unified "Available to Budget" pool that funds spending envelopes until reaching zero balance.
 
 ## Core Features
 
@@ -12,16 +12,16 @@ Transform the Personal Budget PWA into a comprehensive **zero-based budgeting** 
 - **Budget Status**: Clear indication of whether budget is balanced (all income allocated)
 
 ### 2. Income Management
-- **Monthly Income Entry**: Dedicated section for adding all sources of income
-- **Income Tracking**: Total income for the month clearly displayed
-- **Income Categories**: Classify income sources (salary, freelance, investments, etc.)
-- **Income History**: Track income over time for better planning
+- **Multiple Income Sources**: Track separate income streams (salary, freelance, investments, etc.)
+- **Unified Income Pool**: All income sources combine into total "Available to Budget"
+- **Income History**: Track income sources over time for planning and forecasting
+- **Income Categorization**: Group income by type for better organization
 
 ### 3. Zero-Based Allocation
-- **Budget Balancing**: Visual indicator showing progress toward zero balance
-- **Unallocated Funds**: Clear display of remaining income that needs to be allocated
-- **Allocation Tracking**: See how much of each income source is allocated
-- **Over-Allocation Prevention**: Prevent allocating more than available income
+- **Available to Budget**: Prominent display of unallocated income pool (like EveryDollar)
+- **Envelope Funding**: Assign money from Available to Budget to spending envelopes
+- **Zero Balance Goal**: Visual progress toward allocating every dollar
+- **Reallocation Freedom**: Move money between envelopes as needs change
 
 ### 4. Split Transactions
 - **Transaction Splitting**: Ability to split single transactions across multiple envelopes
@@ -43,28 +43,30 @@ Transform the Personal Budget PWA into a comprehensive **zero-based budgeting** 
 
 ## Technical Implementation Plan
 
-### Phase 1: Core Infrastructure
-1. **Database Schema Updates**
-   - Add month-based data structure
-   - Income tracking tables
-   - Transaction split relationships
-   - Budget allocation tracking
+### Phase 1: Core Infrastructure ✅ COMPLETED
+1. **Database Schema Updates** ✅
+   - Add month-based budget structure with availableToBudget field
+   - Income sources tracking with multiple streams
+   - Transaction split relationships (schema ready)
+   - Envelope allocation data with monthly budgeted amounts
 
-2. **Month Management System**
-   - Month selection component
-   - Month creation/copying
-   - Month data isolation
+2. **Month Management System** ✅
+   - MonthSelector component for navigation between months
+   - Month creation/copying functionality in MonthlyBudgetService
+   - Month-based data isolation in monthlyBudgetStore
 
-### Phase 2: Income & Allocation
-1. **Income Entry Interface**
-   - Income source management
-   - Monthly income input
-   - Income categorization
+### Phase 2: Income & Allocation 🚧 IN PROGRESS
+1. **Income Sources Management**
+   - Income source entry forms (add/edit/delete)
+   - Income categorization UI
+   - Real-time total income calculation
+   - Income history and trends
 
-2. **Zero-Based Allocation Engine**
-   - Allocation tracking
-   - Balance calculation
-   - Visual progress indicators
+2. **Available to Budget System** ✅ (Core logic complete)
+   - AvailableToBudget component with progress visualization
+   - Real-time calculation engine
+   - Zero balance goal tracking
+   - Status indicators (balanced/over/under allocated)
 
 ### Phase 3: Split Transactions
 1. **Split Transaction UI**
@@ -91,38 +93,37 @@ Transform the Personal Budget PWA into a comprehensive **zero-based budgeting** 
 ## Data Model Changes
 
 ### New Collections/Tables:
-- `monthly_budgets`: Core budget data per month
-- `income_sources`: User income entries per month
-- `budget_allocations`: How income is allocated to envelopes
+- `monthly_budgets`: Core budget data per month with availableToBudget field
+- `income_sources`: User income entries per month (reference only)
 - `transaction_splits`: Split transaction relationships
-- `envelope_limits`: Spending limits per envelope per month
+- `envelope_allocations`: Monthly budgeted amounts per envelope
 
 ### Updated Collections:
 - `transactions`: Add month reference and split relationships
-- `envelopes`: Add monthly allocation data
+- `envelopes`: Add category grouping and spending tracking
 - `users`: Add budget preferences
 
 ## User Experience Flow
 
 1. **New User Onboarding**
    - Set up first month's budget
-   - Add income sources
-   - Create initial envelopes
-   - Allocate income to envelopes
+   - Add income sources (creates total pool)
+   - Create spending envelopes
+   - Fund envelopes from "Available to Budget"
 
 2. **Monthly Workflow**
    - Review previous month performance
    - Create/copy budget for new month
-   - Add monthly income
-   - Allocate income to envelopes
+   - Add income sources (updates Available to Budget)
+   - Fund envelopes until Available to Budget = $0
    - Track spending throughout month
-   - Review and adjust as needed
+   - Reallocate between envelopes as needed
 
 3. **Daily Usage**
    - Record transactions (with split capability)
-   - Monitor envelope balances
-   - Track budget progress
-   - Adjust allocations as needed
+   - Monitor envelope balances vs budgeted amounts
+   - Track progress toward zero Available to Budget
+   - Adjust envelope allocations as needed
 
 ## Success Metrics
 - **Budget Completion Rate**: % of months where budget reaches zero balance
@@ -138,10 +139,17 @@ Transform the Personal Budget PWA into a comprehensive **zero-based budgeting** 
 - **Integration**: Bank account syncing for automatic transaction import
 
 ## Implementation Priority
-1. **High Priority**: Month management, income tracking, basic allocation
-2. **Medium Priority**: Split transactions, enhanced analytics
-3. **Low Priority**: Advanced features, integrations
+1. **✅ COMPLETED**: Month management, income tracking, basic allocation (Phase 1)
+2. **🚧 CURRENT FOCUS**: Income source forms, envelope allocation UI (Phase 2)
+3. **Medium Priority**: Split transactions, enhanced analytics
+4. **Low Priority**: Advanced features, integrations
+
+## Current Status: Phase 2 Development
+- **Demo Page**: `/monthly-budget-demo` showcases all Phase 1 components
+- **Available to Budget**: Core logic and UI component complete
+- **Month Navigation**: Fully functional with data isolation
+- **Next Steps**: Income source forms and envelope allocation interface
 
 ---
 *Document created: December 27, 2025*
-*Last updated: December 27, 2025*
+*Last updated: December 28, 2025*

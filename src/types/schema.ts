@@ -22,6 +22,7 @@ export interface Transaction {
   type: 'income' | 'expense' | 'transfer';
   transferId?: string | null;
   userId?: string;
+  month?: string; // Format: "2025-01" for monthly budgeting
 }
 
 // 2. Distribution Template Type

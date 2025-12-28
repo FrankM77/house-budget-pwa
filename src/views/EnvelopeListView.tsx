@@ -89,12 +89,19 @@ export const EnvelopeListView: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => navigate('/transactions')}
               className="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               title="Transaction History"
             >
               <ListIcon size={22} />
+            </button>
+            <button
+              onClick={() => navigate('/monthly-budget-demo')}
+              className="text-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+              title="Monthly Budget Demo"
+            >
+              <GitBranch size={22} />
             </button>
             <UserMenu />
           </div>

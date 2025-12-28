@@ -1,0 +1,250 @@
+import { collection, doc, getDoc, setDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '../firebase';
+import type {
+  FirestoreMonthlyBudget,
+  FirestoreIncomeSource,
+  FirestoreEnvelopeAllocation
+} from '../types/firestore';
+import type { MonthlyBudget, IncomeSource, EnvelopeAllocation } from '../models/types';
+
+export class MonthlyBudgetService {
+  private static instance: MonthlyBudgetService;
+
+  public static getInstance(): MonthlyBudgetService {
+    if (!MonthlyBudgetService.instance) {
+      MonthlyBudgetService.instance = new MonthlyBudgetService();
+    }
+    return MonthlyBudgetService.instance;
+  }
+
+  // Monthly Budget CRUD
+  async getMonthlyBudget(userId: string, month: string): Promise<MonthlyBudget | null> {
+    try {
+      const docRef = doc(db, 'monthlyBudgets', `${userId}_${month}`);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data() as FirestoreMonthlyBudget;
+        return {
+          id: data.id,
+          userId: data.userId,
+          month: data.month,
+          totalIncome: parseFloat(data.totalIncome),
+          availableToBudget: parseFloat(data.availableToBudget),
+          createdAt: data.createdAt.toDate().toISOString(),
+          updatedAt: data.updatedAt.toDate().toISOString(),
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting monthly budget:', error);
+      throw error;
+    }
+  }
+
+  async createOrUpdateMonthlyBudget(budget: Omit<MonthlyBudget, 'id' | 'createdAt' | 'updatedAt'>): Promise<MonthlyBudget> {
+    try {
+      const now = Timestamp.now();
+      const id = `${budget.userId}_${budget.month}`;
+
+      const firestoreData: FirestoreMonthlyBudget = {
+        id,
+        userId: budget.userId,
+        month: budget.month,
+        totalIncome: budget.totalIncome.toString(),
+        availableToBudget: budget.availableToBudget.toString(),
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await setDoc(doc(db, 'monthlyBudgets', id), firestoreData);
+
+      return {
+        ...budget,
+        id,
+        createdAt: now.toDate().toISOString(),
+        updatedAt: now.toDate().toISOString(),
+      };
+    } catch (error) {
+      console.error('Error creating/updating monthly budget:', error);
+      throw error;
+    }
+  }
+
+  // Income Sources CRUD
+  async getIncomeSources(userId: string, month: string): Promise<IncomeSource[]> {
+    try {
+      const q = query(
+        collection(db, 'incomeSources'),
+        where('userId', '==', userId),
+        where('month', '==', month)
+      );
+      const querySnapshot = await getDocs(q);
+
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data() as FirestoreIncomeSource;
+        return {
+          id: data.id,
+          userId: data.userId,
+          month: data.month,
+          name: data.name,
+          amount: parseFloat(data.amount),
+          frequency: data.frequency,
+          category: data.category,
+          createdAt: data.createdAt.toDate().toISOString(),
+          updatedAt: data.updatedAt.toDate().toISOString(),
+        };
+      });
+    } catch (error) {
+      console.error('Error getting income sources:', error);
+      throw error;
+    }
+  }
+
+  async createIncomeSource(source: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt'>): Promise<IncomeSource> {
+    try {
+      const now = Timestamp.now();
+      const docRef = doc(collection(db, 'incomeSources'));
+
+      const firestoreData: FirestoreIncomeSource = {
+        id: docRef.id,
+        userId: source.userId,
+        month: source.month,
+        name: source.name,
+        amount: source.amount.toString(),
+        frequency: source.frequency,
+        category: source.category,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await setDoc(docRef, firestoreData);
+
+      return {
+        ...source,
+        id: docRef.id,
+        createdAt: now.toDate().toISOString(),
+        updatedAt: now.toDate().toISOString(),
+      };
+    } catch (error) {
+      console.error('Error creating income source:', error);
+      throw error;
+    }
+  }
+
+  // Envelope Allocations CRUD
+  async getEnvelopeAllocations(userId: string, month: string): Promise<EnvelopeAllocation[]> {
+    try {
+      const q = query(
+        collection(db, 'envelopeAllocations'),
+        where('userId', '==', userId),
+        where('month', '==', month)
+      );
+      const querySnapshot = await getDocs(q);
+
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data() as FirestoreEnvelopeAllocation;
+        return {
+          id: data.id,
+          userId: data.userId,
+          envelopeId: data.envelopeId,
+          month: data.month,
+          budgetedAmount: parseFloat(data.budgetedAmount),
+          createdAt: data.createdAt.toDate().toISOString(),
+          updatedAt: data.updatedAt.toDate().toISOString(),
+        };
+      });
+    } catch (error) {
+      console.error('Error getting envelope allocations:', error);
+      throw error;
+    }
+  }
+
+  async createEnvelopeAllocation(allocation: Omit<EnvelopeAllocation, 'id' | 'createdAt' | 'updatedAt'>): Promise<EnvelopeAllocation> {
+    try {
+      const now = Timestamp.now();
+      const docRef = doc(collection(db, 'envelopeAllocations'));
+
+      const firestoreData: FirestoreEnvelopeAllocation = {
+        id: docRef.id,
+        userId: allocation.userId,
+        envelopeId: allocation.envelopeId,
+        month: allocation.month,
+        budgetedAmount: allocation.budgetedAmount.toString(),
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await setDoc(docRef, firestoreData);
+
+      return {
+        ...allocation,
+        id: docRef.id,
+        createdAt: now.toDate().toISOString(),
+        updatedAt: now.toDate().toISOString(),
+      };
+    } catch (error) {
+      console.error('Error creating envelope allocation:', error);
+      throw error;
+    }
+  }
+
+  // Month Copying Functionality
+  async copyMonthData(
+    userId: string,
+    fromMonth: string,
+    toMonth: string
+  ): Promise<void> {
+    try {
+      // Copy income sources
+      const incomeSources = await this.getIncomeSources(userId, fromMonth);
+      for (const source of incomeSources) {
+        await this.createIncomeSource({
+          ...source,
+          month: toMonth,
+        });
+      }
+
+      // Copy envelope allocations
+      const allocations = await this.getEnvelopeAllocations(userId, fromMonth);
+      for (const allocation of allocations) {
+        await this.createEnvelopeAllocation({
+          ...allocation,
+          month: toMonth,
+        });
+      }
+
+      // Calculate total income and create new monthly budget
+      const totalIncome = incomeSources.reduce((sum, source) => sum + source.amount, 0);
+      const totalAllocations = allocations.reduce((sum, allocation) => sum + allocation.budgetedAmount, 0);
+      const availableToBudget = totalIncome - totalAllocations;
+
+      await this.createOrUpdateMonthlyBudget({
+        userId,
+        month: toMonth,
+        totalIncome,
+        availableToBudget,
+      });
+
+    } catch (error) {
+      console.error('Error copying month data:', error);
+      throw error;
+    }
+  }
+
+  // Calculate available to budget for a month
+  async calculateAvailableToBudget(userId: string, month: string): Promise<number> {
+    try {
+      const incomeSources = await this.getIncomeSources(userId, month);
+      const allocations = await this.getEnvelopeAllocations(userId, month);
+
+      const totalIncome = incomeSources.reduce((sum, source) => sum + source.amount, 0);
+      const totalAllocations = allocations.reduce((sum, allocation) => sum + allocation.budgetedAmount, 0);
+
+      return totalIncome - totalAllocations;
+    } catch (error) {
+      console.error('Error calculating available to budget:', error);
+      throw error;
+    }
+  }
+}
